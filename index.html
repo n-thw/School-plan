@@ -579,7 +579,8 @@ function render(){
   }
   const ro = S.canWrite ? "" : '<div class="ro-banner">أنتِ في وضع العرض فقط. يمكنك تصفح الخطة واستخراج التقارير، والتعديل غير متاح لحسابك.</div>';
   const fn={overview:vOverview,programs:vPrograms,gantt:vGantt,weekly:vWeekly,half:vHalf,evidence:vEvidence}[S.tab]||vOverview;
-  view.innerHTML = ro + fn();
+  try{ view.innerHTML = ro + fn(); }
+  catch(err){ console.error(err); view.innerHTML=`<div class="notice"><h2>تعذّر عرض هذه الصفحة</h2><p>أرسلي صورة هذه الرسالة للدعم: <code dir="ltr">${esc((err&&err.message)||String(err))}</code></p></div>`; return; }
   if(S.tab==="gantt"){ scrollGanttToToday(); requestAnimationFrame(drawDeps); }
 }
 view.addEventListener("focusout",()=>{ setTimeout(()=>{ if(S.pendingRender) render(); },0); });
@@ -1424,7 +1425,9 @@ render();
 /* ---------- boot: one file, two homes ---------- */
 // Inside Claude the page uses Claude's database; anywhere else (GitHub Pages) it uses Firebase from config.js.
 function subscribeAll(db){
-  const onErr=e=>{ if(e?.code!=="revoked") toast("انقطع الاتصال بقاعدة البيانات، أعيدي تحميل الصفحة"); };
+  const onErr=e=>{ if(e?.code==="revoked") return; console.error(e); const m=String(e?.message||"");
+    view.innerHTML=`<div class="notice"><h2>تعذّر جلب الخطة من قاعدة البيانات</h2><p>${/permission|insufficient/i.test(m)?"قواعد Firestore تمنع القراءة: راجعي خطوة القواعد (Rules) في Firebase ثم اضغطي Publish.":"تأكدي من الاتصال ثم أعيدي تحميل الصفحة."}</p><p class="tiny" dir="ltr">${esc(m)}</p></div>`; };
+  clearTimeout(S.loadTimer); S.loadTimer=setTimeout(()=>{ if(S.db&&(!S.loaded.p||!S.loaded.t)) view.innerHTML=`<div class="notice"><h2>التحميل يأخذ وقتًا أطول من المعتاد</h2><p>البرامج: ${S.loaded.p?"وصلت":"لم تصل بعد"} · المهام: ${S.loaded.t?"وصلت":"لم تصل بعد"}. تأكدي من الإنترنت، وإن استمر أرسلي صورة هذه الرسالة.</p></div>`; },15000);
   S.unsubs=[
     db.collection("programs").orderBy("order").onSnapshot(s=>{ S.programs=s.docs.map(x=>({id:x.id,...x.data()})); S.loaded.p=true; render(); },onErr),
     db.collection("tasks").onSnapshot(s=>{ S.tasks=s.docs.map(x=>({id:x.id,...x.data()})); S.loaded.t=true; render(); refreshEvBoxes(); askNameIfNeeded(); },onErr),
