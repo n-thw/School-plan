@@ -1512,7 +1512,15 @@ function showLogin(auth,cfg){
   $("#lgForm").onsubmit=async e=>{ e.preventDefault(); $("#lgErr").textContent=""; $("#lgBtn").disabled=true;
     const email=admin?$("#lg-email").value.trim():(cfg.staffEmail||"staff@khutta.app");
     try{ await auth.signInWithEmailAndPassword(email,$("#lg-code").value); }
-    catch(err){ $("#lgErr").textContent = /network/.test(err.code||"")?"تعذّر الاتصال، تأكدي من الإنترنت":admin?"البريد أو كلمة المرور غير صحيحة":"رمز الدخول غير صحيح"; }
+    catch(err){ const c=err.code||"";
+      $("#lgErr").textContent = /network/.test(c)?"تعذّر الاتصال، تأكدي من الإنترنت"
+        :/unauthorized-domain/.test(c)?"هذا الرابط غير مسموح في Firebase بعد: أضيفي "+location.hostname+" في Authentication ← Settings ← Authorized domains"
+        :/operation-not-allowed|configuration-not-found/.test(c)?"تسجيل الدخول بالبريد غير مفعّل في Firebase: فعّلي Email/Password في Authentication ← Sign-in method"
+        :/too-many-requests/.test(c)?"محاولات كثيرة، انتظري دقائق ثم أعيدي"
+        :/user-not-found/.test(c)?(admin?"لا يوجد حساب بهذا البريد في Firebase":"حساب "+email+" غير موجود في Firebase ← Authentication ← Users")
+        :/api-key|invalid-api-key/.test(c)?"إعدادات Firebase في config.js غير صحيحة"
+        :admin?"البريد أو كلمة المرور غير صحيحة":"رمز الدخول غير صحيح، أو لم يُنشأ حساب "+email+" في Firebase";
+      $("#lgErr").title=c; console.warn("login",c); }
     finally{ $("#lgBtn").disabled=false; } };
   setTimeout(()=>$("#lg-code").focus(),50);
 }
