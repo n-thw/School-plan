@@ -352,6 +352,14 @@ a.ev-thumb{text-decoration:none}a.ev-name{color:var(--accent-2);text-decoration:
 .modal-foot{display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap;margin-top:20px;align-items:center}
 .modal-foot .sp{flex:1}
 .confirm-row{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin-top:12px}
+.prog-acts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.forms-hub{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:16px;background:color-mix(in srgb,var(--accent-soft) 45%,var(--surface))}
+.forms-hub h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:7px;color:var(--navy)}.forms-hub h3 .i{width:18px;height:18px;color:var(--gold)}
+.fh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.fh{font:inherit;text-align:start;display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;transition:transform .15s,border-color .15s}
+.fh:hover{transform:translateY(-2px);border-color:var(--accent)}.fh .i{width:22px;height:22px;color:var(--accent)}.fh b{font-size:14px}.fh span{font-size:12px;color:var(--ink-2)}
+.fh-pick{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:10px}.fh-pick label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
+.icon-btn.ev-done{color:var(--ok)}
 .report-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:11px;margin-bottom:16px}
 .report-opts label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2);font-weight:500}
 .report-preview{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--bg);max-height:52vh;overflow:auto}
@@ -654,6 +662,7 @@ function vPrograms(){
           <div><span class="fi">${ic("coins")}</span><div><dt>التكلفة</dt><dd>${n(p.cost||0)} ريال</dd></div></div>
           <div><span class="fi">${ic("award")}</span><div><dt>مؤشر الإنجاز</dt><dd>${esc(p.indicator)}</dd></div></div>
         </dl>
+        <div class="prog-acts"><button class="btn sm" type="button" data-form="fu" data-prog="${p.id}">${ic("report")} تقرير المتابعة الدوري</button><button class="btn sm" type="button" data-form="cards" data-prog="${p.id}">${ic("clip")} بطاقات توثيق الشواهد</button></div>
         <div class="impr">
           <label for="impr-${p.id}"><span class="fi">${ic("bulb")}</span>فرص التحسين والتطوير</label>
           <textarea id="impr-${p.id}" data-impr="${p.id}" rows="3" placeholder="اكتبي فرص التحسين والتطوير المقترحة لهذا البرنامج، مثل: ما يحتاج إلى معالجة، ومقترحات لرفع الأثر، ودروس مستفادة…" ${S.canWrite?"":"disabled"}>${esc(p.improvements||"")}</textarea>
@@ -805,6 +814,7 @@ function vHalf(){
   };
   return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
     ${sec("pie","المتابعة الربع سنوية",' style="margin:0"')}
+    <div class="prog-acts" style="margin:0"><button class="btn sm primary" type="button" data-form="fu">${ic("report")} تقرير المتابعة الدوري</button><button class="btn sm" type="button" data-form="log">${ic("gantt")} سجل متابعة البرامج</button></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">${H.slice(1).map((q,k)=>`<label class="field-inline" for="qStart${k}">بداية ${q.name} <input type="date" id="qStart${k}" data-qstart="${k}" value="${q.from}" ${S.canWrite?"":"disabled"}> <span class="tiny">${h(q.from)}</span></label>`).join("")}</div>
   </div><div class="halves">${H.map(col).join("")}</div>`;
 }
@@ -882,7 +892,7 @@ function openEditor(id, newFor){
 }
 
 /* ---------- evidence (الشواهد) ---------- */
-const EV_TYPES={png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",gif:"image/gif",webp:"image/webp",pdf:"application/pdf",mp4:"video/mp4",webm:"video/webm",txt:"text/plain",csv:"text/csv"};
+const EV_TYPES={png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",gif:"image/gif",webp:"image/webp",pdf:"application/pdf"};
 const evOf = t => Array.isArray(t.evidence)?t.evidence:[];
 const evKind = e => (e.type||"").startsWith("image/")?"image":(e.type||"").startsWith("video/")?"video":"file";
 const fmtSize = b => b>=1048576?n((b/1048576).toFixed(1))+" م.ب":n(Math.max(1,Math.round(b/1024)))+" ك.ب";
@@ -893,12 +903,12 @@ function evTile(t,e){
   const k=e.link?"link":evKind(e);
   if(k==="link") return `<div class="ev-tile"><a class="ev-thumb ico" href="${esc(e.link)}" target="_blank" rel="noopener noreferrer">${ic("link")}<small>رابط</small></a>
     <div class="ev-meta"><a class="ev-name" href="${esc(e.link)}" target="_blank" rel="noopener noreferrer" title="${esc(e.link)}">${esc(e.name)}</a><span class="tiny">${hdm(e.at||todayISO)}${e.by&&S.MODE==="firebase"?" · "+esc(e.by):""}</span></div>
-    <div class="ev-acts">${canDelEv(e)?`<button class="icon-btn del" data-evdel="${t.id}|${e.id}" title="حذف الشاهد" aria-label="حذف ${esc(e.name)}">${ic("trash")}</button>`:""}</div></div>`;
+    <div class="ev-acts"><button class="icon-btn${e.desc?" ev-done":""}" data-evdoc="${t.id}|${e.id}" title="${e.desc?"موثّق، عرض بطاقة التوثيق":"توثيق الشاهد وتصدير بطاقته"}" aria-label="توثيق ${esc(e.name)}">${ic("report")}</button>${canDelEv(e)?`<button class="icon-btn del" data-evdel="${t.id}|${e.id}" title="حذف الشاهد" aria-label="حذف ${esc(e.name)}">${ic("trash")}</button>`:""}</div></div>`;
   return `<div class="ev-tile">
     ${k==="image"?`<button class="ev-thumb" data-evview="${t.id}|${e.id}" aria-label="عرض ${esc(e.name)}"><img data-evsrc="${e.id}" alt="${esc(e.name)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ev-miss',textContent:'تعذّر عرض الصورة'}))"></button>`
       :`<span class="ev-thumb ico">${ic(k==="video"?"video":"file")}<small>${esc((e.name.split(".").pop()||"").toUpperCase())}</small></span>`}
     <div class="ev-meta"><span class="ev-name" title="${esc(e.name)}">${esc(e.name)}</span><span class="tiny">${fmtSize(e.size||0)} · ${hdm(e.at||todayISO)}${e.by&&S.MODE==="firebase"?" · "+esc(e.by):""}</span></div>
-    <div class="ev-acts"><button class="icon-btn" data-evdl="${t.id}|${e.id}" title="تنزيل" aria-label="تنزيل ${esc(e.name)}">${ICON.dl}</button>${canDelEv(e)?`<button class="icon-btn del" data-evdel="${t.id}|${e.id}" title="حذف الشاهد" aria-label="حذف ${esc(e.name)}">${ic("trash")}</button>`:""}</div>
+    <div class="ev-acts"><button class="icon-btn${e.desc?" ev-done":""}" data-evdoc="${t.id}|${e.id}" title="${e.desc?"موثّق، عرض بطاقة التوثيق":"توثيق الشاهد وتصدير بطاقته"}" aria-label="توثيق ${esc(e.name)}">${ic("report")}</button><button class="icon-btn" data-evdl="${t.id}|${e.id}" title="تنزيل" aria-label="تنزيل ${esc(e.name)}">${ICON.dl}</button>${canDelEv(e)?`<button class="icon-btn del" data-evdel="${t.id}|${e.id}" title="حذف الشاهد" aria-label="حذف ${esc(e.name)}">${ic("trash")}</button>`:""}</div>
   </div>`;
 }
 function evBox(t){
@@ -907,7 +917,7 @@ function evBox(t){
     <div class="ev-head"><span class="fi">${ic("clip")}</span><b>الشواهد</b><span class="tiny">${ev.length?n(ev.length)+" ملف":"لا توجد شواهد بعد"}</span>
       ${S.as?`<button class="btn sm primary" data-evup="${t.id}" type="button" style="margin-inline-start:auto">${ic("upload")} رفع شاهد</button>`:""}</div>
     ${ev.length?`<div class="ev-grid">${ev.map(e=>evTile(t,e)).join("")}</div>`:""}
-    ${S.as?`<div class="ev-drop" data-evup="${t.id}">اسحبي الملفات هنا أو اضغطي للاختيار · ${S.MODE==="firebase"?"الصور تُضغط تلقائيًا، وملفات PDF حتى ٧٠٠ ك.ب":"صور، PDF، فيديو (حتى ٢٠ م.ب للملف)"}</div>
+    ${S.as?`<div class="ev-drop" data-evup="${t.id}">اسحبي الملفات هنا أو اضغطي للاختيار · ${S.MODE==="firebase"?"صور أو ملفات PDF · الصور تُضغط تلقائيًا، وملف PDF حتى ٧٠٠ ك.ب":"صور أو ملفات PDF (حتى ٢٠ م.ب للملف)"}</div>
     <div class="ev-link"><input type="url" id="evl-${t.id}" placeholder="أو الصقي رابط الشاهد (Google Drive مثلًا)" aria-label="رابط الشاهد"><button class="btn sm" type="button" data-evlink="${t.id}">${ic("link")} إضافة رابط</button></div>`:`<p class="tiny">رفع الشواهد متاح لمن لديها صلاحية المساهمة في التطبيق.</p>`}
     <div class="ev-progress" id="ev-prog-${t.id}"></div>
   </div>`;
@@ -922,7 +932,7 @@ async function addEvidenceLink(taskId){
   const name=/drive\.google|docs\.google/.test(host)?"ملف على Google Drive":/onedrive|sharepoint/.test(host)?"ملف على OneDrive":"رابط: "+host;
   if(await saveTask(taskId,{evidence:[...evOf(t),{id:"lnk"+Date.now().toString(36),link:u.href,name,type:"link",at:todayISO,by:S.uid||""}]})) toast("أُضيف رابط الشاهد");
 }
-const evInput=Object.assign(document.createElement("input"),{type:"file",multiple:true,accept:"image/*,application/pdf,video/mp4,video/webm,.txt,.csv",hidden:true});
+const evInput=Object.assign(document.createElement("input"),{type:"file",multiple:true,accept:"image/png,image/jpeg,image/gif,image/webp,application/pdf,.pdf,.png,.jpg,.jpeg,.gif,.webp",hidden:true});
 document.body.appendChild(evInput);
 let evTarget=null;
 function pickEvidence(taskId){ if(!S.as){ toast("رفع الشواهد غير متاح لحسابك"); return; } evTarget=taskId; evInput.value=""; evInput.click(); }
@@ -934,7 +944,7 @@ async function uploadEvidence(taskId, files){
   for(const f of files){
     i++; const p=prog(); if(p) p.textContent=`جارٍ رفع ${n(i)} من ${n(files.length)}: ${f.name}`;
     const ext=(f.name.split(".").pop()||"").toLowerCase(); const type=EV_TYPES[ext]||f.type;
-    if(!Object.values(EV_TYPES).includes(type)){ toast(`«${f.name}»: الصيغة غير مدعومة، حوّليه إلى PDF أو صورة`); continue; }
+    if(!Object.values(EV_TYPES).includes(type)){ toast(`«${f.name}»: يُسمح بالصور وملفات PDF فقط`); continue; }
     if(f.size>20*1048576){ toast(`«${f.name}» أكبر من ٢٠ م.ب`); continue; }
     try{ const r=await S.as.upload(f,{type}); added.push({id:r.id,name:f.name,type:r.contentType||type,size:r.sizeBytes||f.size,at:todayISO,by:S.uid||""}); }
     catch(e){ const m={too_large:S.MODE==="firebase"?"أكبر من ٧٠٠ ك.ب، ارفعيه على Google Drive وأضيفي رابطه":"الملف كبير جدًا",unsupported_type:"الصيغة غير مدعومة، حوّليه إلى PDF أو صورة",quota_or_state:"امتلأت مساحة الشواهد في التطبيق",rate_limited:"محاولات كثيرة، انتظري قليلًا ثم أعيدي"}[e?.code]||"تعذّر الرفع، حاولي مرة أخرى"; toast(`«${f.name}»: ${m}`); if(e?.code==="rate_limited"||e?.code==="quota_or_state") break; }
@@ -987,7 +997,8 @@ function vEvidence(){
   const doneAll=ts.filter(t=>t.status==="done").length;
   const cover=doneAll?Math.round((doneAll-doneNo.length)/doneAll*100):0;
   const groups=S.programs.map(p=>({p,items:withEv.filter(t=>t.programId===p.id).sort((a,b)=>(a.order||0)-(b.order||0))})).filter(g=>g.items.length);
-  return `<div class="stats">
+  return `<div class="prog-acts" style="justify-content:flex-end"><button class="btn sm primary" type="button" data-form="gloss">${ic("list")} المسرد · خلاصة الشواهد</button><button class="btn sm" type="button" data-form="cards">${ic("clip")} بطاقات توثيق الشواهد</button></div>
+  <div class="stats">
     ${stat("clip",n(files),"ملف شاهد مرفوع","","",true)}
     ${stat("tasks",n(withEv.length),"مهمة لها شواهد","var(--accent-2)","color-mix(in srgb,var(--accent-2) 14%,transparent)")}
     ${stat("done",n(cover)+"٪","من المهام المنجزة موثّقة بشواهد","var(--ok)","var(--ok-soft)")}
@@ -1051,6 +1062,7 @@ function openReport(){
   const allP=[...new Set(S.tasks.flatMap(people))].sort((a,b)=>a.localeCompare(b,"ar"));
   modalRoot.innerHTML=`<div class="modal-back" data-close="1"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="rpTitle">
     <h2 id="rpTitle"><span class="sec-ic" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--gold-soft);color:var(--gold)">${ic("report")}</span>استخراج تقرير الإنجاز</h2>
+    ${formsHub()}
     <div class="report-opts">
       <label for="rp-scope">الفترة<select id="rp-scope">${Object.entries(sc).map(([k,v])=>`<option value="${k}">${esc(v.name)}</option>`).join("")}</select></label>
       <label for="rp-prog">البرنامج<select id="rp-prog"><option value="">كل البرامج</option>${S.programs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></label>
@@ -1095,6 +1107,260 @@ function dlErr(e){
   if(e?.code==="rate_limited") toast("هناك نافذة حفظ مفتوحة بالفعل");
   else toast("التنزيل غير متاح هنا، استخدمي زر نسخ التقرير");
 }
+
+/* ---------- النماذج الرسمية (الملحق ٠١ · متابعة البرامج والتوثيق) ---------- */
+const SCHOOL="المتوسطة الأولى لتحفيظ القرآن الكريم بالجبيل";
+const MOE_LOGO="data:image/png;base64,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";
+const nn=new Intl.NumberFormat("ar-SA",{useGrouping:false});
+const hy = s => { if(!s) return "……/……/١٤٤٨هـ"; const p=hParts(+d(s)); return `${nn.format(p.y)}/${nn.format(p.m)}/${nn.format(p.d)}هـ`; };
+const PST={todo:"لم يبدأ",ontrack:"جارٍ حسب الخطة",late:"جارٍ مع تأخر",blocked:"متعثر",done:"مكتمل"};
+const PST_C={todo:"#8A9AA5",ontrack:"#2E8B57",late:"#B0661A",blocked:"#B03A48",done:"#2781BE"};
+const RATES=[["3","عالٍ"],["2","متوسط"],["1","قليل"],["0","غير متوفر"]];
+const allTasksOf = pid => S.tasks.filter(t=>t.programId===pid).sort((a,b)=>(a.order||0)-(b.order||0));
+const progPct = p => avg(allTasksOf(p.id).map(pct));
+function progStatus(p){
+  const pt=allTasksOf(p.id); if(!pt.length) return "todo";
+  if(pt.every(t=>t.status==="done")) return "done";
+  if(pt.some(t=>t.status==="blocked")) return "blocked";
+  if(pt.some(isLate)) return "late";
+  if(pt.every(t=>t.status==="todo"&&!pct(t))) return "todo";
+  return "ontrack";
+}
+function goalOf(p){ const g=String(p?.goal||"").trim(); const m=g.split(/\s*[\/／]\s*/); return {gen:m[0]||"",det:m[1]||"",full:g}; }
+function progEvidence(p){ let k=0; return allTasksOf(p.id).flatMap(t=>evOf(t).map(e=>({t,e,seq:++k}))); }
+function evCode(p,x){ const g=goalOf(p); return {gen:g.gen,det:g.det,ind:x.e.ind?nn.format(+x.e.ind):"١",seq:nn.format(x.seq)}; }
+const evCodeStr = c => [c.gen,c.det,c.ind,c.seq].join("/");
+const toNum = s => { const v=String(s??"").replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/[٫,]/g,".").replace(/[^\d.\-]/g,""); return v&&!isNaN(+v)?+v:null; };
+function fuDefaults(p){
+  const done=allTasksOf(p.id).filter(t=>t.status==="done"||pct(t)>0);
+  const evs=progEvidence(p);
+  const txt=done.map(t=>{ const codes=evs.filter(x=>x.t.id===t.id).map(x=>evCodeStr(evCode(p,x)));
+    return `• ${t.title}${t.status==="done"?"":` (${nn.format(pct(t))}٪)`}${codes.length?` · الشواهد: ${codes.join("، ")}`:""}`; }).join("\n");
+  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.improvements||"",achieved:"",corrective:"",corrResp:(p.lead||[]).join("، "),corrDue:"",follower:S.uid&&S.MODE==="firebase"?S.uid:"",next:""};
+}
+
+/* ----- shared page shell ----- */
+const FORM_CSS=`*{box-sizing:border-box}html,body{margin:0;background:#e9eef1}body{font-family:"Tajawal","Helvetica Neue",Tahoma,Arial,sans-serif;color:#2B3A47;direction:rtl;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bar-top{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;justify-content:center;padding:10px;background:#123B5A;color:#fff;font-size:14px}.bar-top button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:8px 18px;background:#3CA395;color:#fff;cursor:pointer}
+.page{width:297mm;height:210mm;margin:14px auto;background:#fff;position:relative;overflow:hidden;box-shadow:0 6px 24px rgba(18,59,90,.15);padding:13mm 12mm 0;display:flex;flex-direction:column}
+.page::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:linear-gradient(270deg,#3CA395,#2781BE)}
+.hd{display:flex;justify-content:space-between;align-items:flex-start}.hd .ann{font-weight:700;color:#1F7482;font-size:13.5px;display:flex;align-items:center;gap:8px;margin-top:6px}.hd .ann::before{content:"";width:8px;height:8px;border-radius:50%;background:#3CA395}
+.hd img{width:58px}.ttl{display:flex;justify-content:space-between;align-items:flex-end;margin:2px 0 8px}.ttl small{display:block;color:#1F7482;font-weight:700;font-size:14px;margin-bottom:4px}
+.ttl h1{margin:0;font-size:28px;line-height:1.25;color:#123B5A;font-weight:800}.ttl .ul{width:100px;height:4px;border-radius:4px;background:linear-gradient(270deg,#3CA395,#2781BE);margin-bottom:8px}
+.ft{margin-top:auto;border-top:1px solid #DCE6EA;display:flex;justify-content:space-between;align-items:center;padding:7px 0 9px;font-size:11.5px;color:#5E707C}
+.ft b{color:#1F7482;font-size:13px;border-inline-start:4px solid #3CA395;padding-inline-start:7px}.ft span{display:flex;align-items:center;gap:8px}.ft span::after{content:"";width:22px;height:3px;border-radius:3px;background:linear-gradient(270deg,#3CA395,#2781BE)}
+.box{border:1px solid #DFEBEE;border-radius:9px;padding:6px 9px;background:#fff;min-width:0}.box>.l{display:block;font-weight:700;color:#1F7482;font-size:11.5px;margin-bottom:3px}.box .v{font-size:12.5px;white-space:pre-line;line-height:1.55}
+.g{display:grid;gap:7px;margin-bottom:7px}.chk{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;margin-inline-end:12px}.chk i{width:11px;height:11px;border:1.4px solid currentColor;border-radius:2px;display:inline-grid;place-items:center;font-style:normal;font-size:9px;line-height:1}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;direction:ltr}.scale i{height:14px;border-radius:3px;background:#E3ECEF;border:1px solid #DCE6EA}.scale i.on{background:linear-gradient(90deg,#2781BE,#3CA395);border-color:transparent}
+.scale-l{display:flex;justify-content:space-between;direction:ltr;font-size:10px;color:#5E707C;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#DDEEF1;color:#123B5A;font-weight:700;padding:5px 6px;border:1px solid #BFD9DE}td{border:1px solid #DFEBEE;padding:5px 6px;vertical-align:middle}tbody tr:nth-child(even) td{background:#F3F8F9}
+.c{text-align:center}.code{color:#2781BE;font-weight:800;white-space:nowrap}.nw{white-space:nowrap}.pill{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11px;padding:2px 9px;border-radius:999px;white-space:nowrap}.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.sig{min-height:52px}.dots{color:#8A9AA5}
+@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0;box-shadow:none;break-after:page}.page:last-child{break-after:auto}}`;
+function formPage({sub,title,body,num}){
+  return `<section class="page"><div class="hd"><div class="ann">الملحق ٠١ · متابعة البرامج والتوثيق</div><img src="${MOE_LOGO}" alt="وزارة التعليم"></div>
+  <div class="ttl"><div><small>${esc(sub)}</small><h1>${title}</h1></div><div class="ul"></div></div>
+  <div style="flex:1;min-height:0;display:flex;flex-direction:column">${body}</div>
+  <div class="ft"><b>${SCHOOL}</b><span>الخطة التشغيلية للعام الدراسي ١٤٤٨هـ${num?` · ${num}`:""}</span></div></section>`;
+}
+function formDoc(title,pages){
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"><style>${FORM_CSS}</style></head>
+<body><div class="bar-top">${esc(title)} <button type="button" onclick="window.print()">طباعة / حفظ PDF</button></div>${pages.join("")}</body></html>`;
+}
+async function saveForm(name,html){
+  if(!S.dl){ toast("التنزيل غير متاح هنا"); return; }
+  try{ await S.dl.save({filename:`${name}-${todayISO}.html`,data:html}); toast("حُفظ النموذج، افتحيه واطبعيه أو احفظيه PDF"); }catch(e){ dlErr(e); }
+}
+const chk = (on,label,color) => `<span class="chk" style="color:${color||"#2B3A47"}"><i>${on?"✓":""}</i>${label}</span>`;
+const val = (v,ph) => v?esc(v):`<span class="dots">${ph||"…………………"}</span>`;
+
+/* ----- (١) تقرير المتابعة الدوري ----- */
+function fuPage(p,fu){
+  const g=goalOf(p), st=fu.status||progStatus(p), v=progPct(p), on=Math.round(v/10);
+  const t=toNum(p.target), a=toNum(fu.achieved); const diff=(t!==null&&a!==null)?(a-t):null;
+  const diffS=diff===null?"":(diff>0?"+":"")+new Intl.NumberFormat("ar-SA",{maximumFractionDigits:2}).format(diff);
+  return formPage({sub:"نموذج يُعبّأ شهريًا أو فصليًا لكل برنامج",title:"تقرير المتابعة الدوري لبرنامج",body:`
+  <div class="g" style="grid-template-columns:2.3fr .8fr 1.7fr 1.2fr 1.2fr">
+    <div class="box"><span class="l">اسم البرنامج</span><div class="v" style="font-weight:700;font-size:14px">${esc(p.name)}</div></div>
+    <div class="box"><span class="l">رمز الهدف</span><div class="v code">${esc(g.full)}</div></div>
+    <div class="box"><span class="l">مسؤولة التنفيذ</span><div class="v">${esc((p.lead||[]).join("، "))}</div></div>
+    <div class="box"><span class="l">تاريخ المتابعة</span><div class="v">${hy(fu.date)}</div></div>
+    <div class="box"><span class="l">فترة المتابعة</span><div class="v">${chk(fu.period!=="quarterly","شهريًا")}${chk(fu.period==="quarterly","فصلية")}</div></div>
+  </div>
+  <div class="g" style="grid-template-columns:1fr 1fr">
+    <div class="box"><span class="l">نسبة الإنجاز (طُلِّل حتى النسبة المتحققة) · ${nn.format(v)}٪</span><div class="scale">${Array.from({length:10},(_,i)=>`<i class="${i<on?"on":""}"></i>`).join("")}</div><div class="scale-l"><span>٠</span><span>٢٥</span><span>٥٠</span><span>٧٥</span><span>١٠٠</span></div></div>
+    <div class="box"><span class="l">حالة التنفيذ</span><div class="v" style="display:flex;flex-wrap:wrap;gap:4px 0;margin-top:6px">${Object.entries(PST).map(([k,l])=>chk(st===k,l,PST_C[k])).join("")}</div></div>
+  </div>
+  <div class="g" style="grid-template-columns:1fr 1fr;flex:1;min-height:0">
+    <div class="box" style="overflow:hidden"><span class="l">ما تم إنجازه (مع أرقام الشواهد)</span><div class="v" style="font-size:11.5px">${esc(fu.done||"")}</div></div>
+    <div class="box" style="overflow:hidden"><span class="l">أبرز التحديات وفرص التحسين</span><div class="v" style="font-size:11.5px">${esc(fu.challenges||"")}</div></div>
+  </div>
+  <div class="g" style="grid-template-columns:1fr 1fr">
+    <table><thead><tr><th>مؤشر البرنامج</th><th>المستهدف</th><th>المتحقق</th><th>الفرق</th></tr></thead><tbody>
+      <tr><td style="font-size:10.5px">${esc(p.indicator||"")}</td><td class="c nw">${esc(p.target||"")}</td><td class="c nw">${esc(fu.achieved||"")}</td><td class="c nw" style="font-weight:700;color:${diff===null?"inherit":diff>=0?"#2E8B57":"#B03A48"}"><bdi dir="ltr">${diffS}</bdi></td></tr>
+      <tr><td>خط الأساس</td><td class="c nw" colspan="3">${esc(p.baseline||"")}</td></tr></tbody></table>
+    <div class="box"><span class="l">الإجراء التصحيحي المطلوب</span><div class="v">${esc(fu.corrective||"")}</div>
+      <div class="v" style="margin-top:6px;font-size:12px">المسؤولة: ${val(fu.corrResp)}&nbsp;&nbsp;&nbsp; موعد الإنجاز: ${fu.corrDue?hy(fu.corrDue):"……/……/١٤٤٨هـ"}</div></div>
+  </div>
+  <div class="g" style="grid-template-columns:repeat(4,1fr);margin-bottom:8px">
+    <div class="box sig"><span class="l">المتابِعة (الاسم والتوقيع)</span><div class="v">${esc(fu.follower||"")}</div></div>
+    <div class="box sig"><span class="l">موعد المتابعة القادمة</span><div class="v">${fu.next?hy(fu.next):""}</div></div>
+    <div class="box sig"><span class="l">اعتماد رئيسة فريق المتابعة</span></div>
+    <div class="box sig"><span class="l">اطلاع مديرة المدرسة</span><div class="v">ريم العثيم</div></div>
+  </div>`});
+}
+function openFollowup(pid){
+  const p=progById(pid)||S.programs[0]; if(!p) return;
+  const fu={...fuDefaults(p),...(p.fu||{})}; if(!fu.done) fu.done=fuDefaults(p).done; const ro=!S.canWrite;
+  modalRoot.innerHTML=`<div class="modal-back" data-close="1"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="fuT">
+    <h2 id="fuT"><span class="sec-ic" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)">${ic("report")}</span>تقرير المتابعة الدوري</h2>
+    <form class="form" id="fuForm">
+      <label class="full">البرنامج<select id="fu-prog">${S.programs.map(x=>`<option value="${x.id}" ${x.id===p.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
+      <label>فترة المتابعة<select id="fu-period"><option value="monthly">شهرية</option><option value="quarterly">فصلية</option></select></label>
+      <label>تاريخ المتابعة<input type="date" id="fu-date" value="${fu.date}"></label>
+      <label>حالة التنفيذ<select id="fu-status"><option value="">تلقائي: ${PST[progStatus(p)]}</option>${Object.entries(PST).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></label>
+      <label>نسبة الإنجاز<input type="text" value="${n(progPct(p))}٪ (محسوبة من المهام)" disabled></label>
+      <label class="full">ما تم إنجازه (مع أرقام الشواهد) <button type="button" class="btn sm" id="fu-auto" style="align-self:flex-start">${ic("spark")} تعبئة من المهام والشواهد</button><textarea id="fu-done" rows="5">${esc(fu.done)}</textarea></label>
+      <label class="full">أبرز التحديات وفرص التحسين<textarea id="fu-ch" rows="3">${esc(fu.challenges)}</textarea></label>
+      <label>المتحقق من المؤشر<input type="text" id="fu-ach" value="${esc(fu.achieved)}" placeholder="المستهدف: ${esc(p.target||"")}"></label>
+      <label>المتابِعة<input type="text" id="fu-fol" value="${esc(fu.follower)}" list="ppl-fu"></label>
+      <label class="full">الإجراء التصحيحي المطلوب<textarea id="fu-cor" rows="2">${esc(fu.corrective)}</textarea></label>
+      <label>مسؤولة الإجراء<input type="text" id="fu-cres" value="${esc(fu.corrResp)}" list="ppl-fu"></label>
+      <label>موعد إنجاز الإجراء<input type="date" id="fu-cdue" value="${fu.corrDue}"></label>
+      <label>موعد المتابعة القادمة<input type="date" id="fu-next" value="${fu.next}"></label>
+      <datalist id="ppl-fu">${[...new Set(S.tasks.flatMap(people))].map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+    </form>
+    <div class="modal-foot"><button class="btn primary" id="fu-go" type="button">${ICON.dl} ${ro?"تصدير التقرير":"حفظ وتصدير التقرير"}</button>${ro?"":`<button class="btn" id="fu-save" type="button">${ic("check")} حفظ فقط</button>`}<span class="sp"></span><button class="btn" data-close="1" type="button">إغلاق</button></div>
+  </div></div>`;
+  const $=s=>modalRoot.querySelector(s);
+  modalRoot.querySelectorAll('input[type="date"]').forEach(inp=>{ const hn=Object.assign(document.createElement("span"),{className:"hint"}); const u=()=>hn.textContent=inp.value?hl(inp.value):""; inp.after(hn); inp.addEventListener("input",u); u(); });
+  $("#fu-period").value=fu.period; $("#fu-status").value=fu.status||"";
+  $("#fu-prog").onchange=e=>openFollowup(e.target.value);
+  $("#fu-auto").onclick=()=>{ $("#fu-done").value=fuDefaults(p).done; };
+  const read=()=>({period:$("#fu-period").value,date:$("#fu-date").value||todayISO,status:$("#fu-status").value,done:$("#fu-done").value.trim(),challenges:$("#fu-ch").value.trim(),achieved:$("#fu-ach").value.trim(),
+    corrective:$("#fu-cor").value.trim(),corrResp:$("#fu-cres").value.trim(),corrDue:$("#fu-cdue").value,follower:$("#fu-fol").value.trim(),next:$("#fu-next").value});
+  const save=async f=>{ if(!S.db||!S.canWrite) return false; try{ await S.db.doc("programs/"+p.id).update({fu:f}); return true; }catch(e){ handleWriteErr(e); return false; } };
+  $("#fu-save")?.addEventListener("click",async()=>{ if(await save(read())) toast("حُفظت بيانات المتابعة"); });
+  $("#fu-go").onclick=async()=>{ const f=read(); if(!ro) await save(f); await saveForm(`تقرير-المتابعة-الدوري-${p.name}`,formDoc(`تقرير المتابعة الدوري · ${p.name}`,[fuPage(p,f)])); };
+}
+
+/* ----- (٢) بطاقة توثيق شاهد ----- */
+async function evDataUrl(e){
+  if(e.link||!/^image\//.test(e.type||"")) return "";
+  try{ let b; if(S.as?.blob) b=await S.as.blob(e.id); else { const r=await fetch("/_blob/"+e.id); if(!r.ok) throw 0; b=await r.blob(); }
+    return `data:${e.type};base64,${await blobToB64(b)}`; }catch(_){ return ""; }
+}
+function cardPage(p,x,img){
+  const e=x.e, c=evCode(p,x);
+  const slot=img?`<img src="${img}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px">`
+    :`<div style="text-align:center;color:#8A9AA5"><div style="font-size:34px">${e.link?"🔗":(e.type==="application/pdf"?"📄":"🖼️")}</div><b style="display:block;color:#5E707C;font-size:15px;margin:4px 0">${e.link?"شاهد على رابط":e.type==="application/pdf"?"ملف PDF مرفق":"موضع الشاهد"}</b><div style="font-size:11.5px;direction:ltr;word-break:break-all">${esc(e.link||e.name||"")}</div></div>`;
+  const nb=(v,l)=>`<div style="text-align:center"><div style="border:1px solid #9CC4E4;border-radius:7px;background:#fff;height:30px;min-width:66px;display:grid;place-items:center;font-weight:800;color:#2781BE;font-size:15px">${esc(v)}</div><div style="font-size:10px;color:#5E707C;margin-top:3px">${l}</div></div>`;
+  return formPage({sub:"تُرفق مع كل شاهد",title:"نموذج (٢): بطاقة توثيق شاهد",body:`
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;flex:1;min-height:0;margin-bottom:8px">
+    <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
+      <div class="box"><span class="l">اسم البرنامج</span><div class="v" style="font-weight:700">${esc(p.name)}</div></div>
+      <div class="box"><span class="l">الهدف العام</span><div class="v" style="font-size:11.5px">${esc(p.strategic||"")}</div></div>
+      <div class="box"><span class="l">الهدف التفصيلي</span><div class="v" style="font-size:11.5px">${esc(p.operational||"")}</div></div>
+      <div class="box"><span class="l">مؤشر الإنجاز</span><div class="v" style="font-size:11.5px">${esc(p.indicator||"")}</div></div>
+      <div class="box" style="flex:1;overflow:hidden"><span class="l">وصف الشاهد</span><div class="v">${esc(e.desc||x.t.title)}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="box"><span class="l">تاريخ التنفيذ</span><div class="v">${hy(e.date||e.at)}</div></div><div class="box"><span class="l">الفئة المستفيدة وعددها</span><div class="v" style="font-size:11.5px">${esc(e.benef||p.audience||"")}</div></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
+      <div class="box" style="background:#EEF5FB;border-color:#9CC4E4"><span class="l" style="color:#123B5A">رقم الشاهد</span><div style="display:flex;justify-content:center;gap:8px;align-items:flex-start">${nb(c.gen,"الهدف العام")}<b style="color:#9CC4E4;margin-top:6px">/</b>${nb(c.det,"الهدف التفصيلي")}<b style="color:#9CC4E4;margin-top:6px">/</b>${nb(c.ind,"مؤشر الإنجاز")}<b style="color:#9CC4E4;margin-top:6px">/</b>${nb(c.seq,"الشاهد")}</div></div>
+      <div style="flex:1;min-height:0;border:1.5px dashed #BFD9DE;border-radius:9px;background:#F6F9FA;display:grid;place-items:center;padding:8px;overflow:hidden">${slot}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="box sig" style="min-height:44px"><span class="l">مسؤولة البرنامج (الاسم والتوقيع)</span><div class="v" style="font-size:11.5px">${esc((p.lead||[]).join("، "))}</div></div><div class="box sig" style="min-height:44px"><span class="l">اعتماد رئيسة فريق المتابعة</span></div></div>
+    </div>
+  </div>`});
+}
+async function exportCards(p,list){
+  if(!list.length){ toast("لا توجد شواهد لهذا البرنامج بعد"); return; }
+  toast("جارٍ تجهيز بطاقات التوثيق…");
+  const pages=[]; for(const x of list) pages.push(cardPage(p,x,await evDataUrl(x.e)));
+  await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/\//g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages));
+}
+function openEvDoc(taskId,evId,back){
+  const t=S.tasks.find(x=>x.id===taskId); const p=progById(t?.programId); if(!t||!p) return;
+  const x=progEvidence(p).find(y=>y.t.id===taskId&&y.e.id===evId); if(!x) return; const e=x.e; const ro=!S.canWrite;
+  const c=evCode(p,x);
+  modalRoot.innerHTML=`<div class="modal-back" data-close="1"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="edT" style="width:min(620px,100%)">
+    <h2 id="edT"><span class="sec-ic" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)">${ic("clip")}</span>توثيق شاهد <span class="goal-tag" style="margin-inline-start:6px">رقم ${esc(evCodeStr(c))}</span></h2>
+    <p class="tiny" style="margin-top:0">${esc(p.name)} · ${esc(t.title)} · ${esc(e.name)}</p>
+    <form class="form">
+      <label class="full">وصف الشاهد<textarea id="ed-desc" rows="3" ${ro?"disabled":""}>${esc(e.desc||t.title)}</textarea></label>
+      <label>تاريخ التنفيذ<input type="date" id="ed-date" value="${e.date||e.at||todayISO}" ${ro?"disabled":""}></label>
+      <label>رقم مؤشر الإنجاز<input type="number" min="1" max="9" id="ed-ind" value="${e.ind||1}" ${ro?"disabled":""}></label>
+      <label class="full">الفئة المستفيدة وعددها<input type="text" id="ed-benef" value="${esc(e.benef||p.audience||"")}" ${ro?"disabled":""}></label>
+      <label>تقويم اللجنة (مستوى الإنجاز)<select id="ed-rate" ${ro?"disabled":""}><option value="">لم يُقوَّم بعد</option>${RATES.map(([k,l])=>`<option value="${k}">${l} (${nn.format(+k)})</option>`).join("")}</select></label>
+      <label>سبب التصنيف<input type="text" id="ed-why" value="${esc(e.rateWhy||"")}" ${ro?"disabled":""}></label>
+    </form>
+    <div class="modal-foot"><button class="btn primary" id="ed-go" type="button">${ICON.dl} ${ro?"تصدير البطاقة":"حفظ وتصدير البطاقة"}</button>${ro?"":`<button class="btn" id="ed-sv" type="button">${ic("check")} حفظ فقط</button>`}<span class="sp"></span><button class="btn" type="button" id="ed-back">رجوع</button></div>
+  </div></div>`;
+  const $=s=>modalRoot.querySelector(s);
+  modalRoot.querySelectorAll('input[type="date"]').forEach(inp=>{ const hn=Object.assign(document.createElement("span"),{className:"hint"}); const u=()=>hn.textContent=inp.value?hl(inp.value):""; inp.after(hn); inp.addEventListener("input",u); u(); });
+  $("#ed-rate").value=e.rate??"";
+  const read=()=>({desc:$("#ed-desc").value.trim(),date:$("#ed-date").value,ind:Math.max(1,+$("#ed-ind").value||1),benef:$("#ed-benef").value.trim(),rate:$("#ed-rate").value,rateWhy:$("#ed-why").value.trim()});
+  const save=async()=>{ if(ro) return true; const f=read(); const cur=S.tasks.find(y=>y.id===taskId); return saveTask(taskId,{evidence:evOf(cur).map(y=>y.id===evId?{...y,...f}:y)}); };
+  const goBack=()=>{ if(back==="editor") openEditor(taskId); else closeModal(); };
+  $("#ed-back").onclick=goBack;
+  $("#ed-sv")?.addEventListener("click",async()=>{ if(await save()){ toast("حُفظ توثيق الشاهد"); goBack(); } });
+  $("#ed-go").onclick=async()=>{ if(!(await save())) return; const pp=progById(t.programId); const xx=progEvidence(pp).find(y=>y.e.id===evId)||{...x,e:{...e,...read()}}; await exportCards(pp,[xx]); };
+}
+
+/* ----- (٣) المسرد ----- */
+function glossaryPages(){
+  const rows=S.programs.flatMap(p=>{ const evs=progEvidence(p); const g=goalOf(p);
+    if(!evs.length) return [{p,g,x:null}]; return evs.map(x=>({p,g,x})); });
+  const per=11, pages=[];
+  for(let i=0;i<rows.length||i===0;i+=per){
+    const part=rows.slice(i,i+per);
+    pages.push(formPage({sub:"تُجمع فيه شواهد البرامج وتقوَّمها لجنة التقويم",title:"نموذج (٣): المسرد · خلاصة برامج مؤشرات الخطة ١٤٤٨هـ",num:pages.length?`صفحة ${nn.format(pages.length+1)}`:"",body:`
+    <table><thead><tr><th rowspan="2">اسم البرنامج</th><th rowspan="2">رقم<br>الهدف العام</th><th rowspan="2">رقم<br>الهدف التفصيلي</th><th rowspan="2">رقم مؤشر<br>الإنجاز</th><th rowspan="2">رقم الشاهد</th><th rowspan="2" style="width:22%">وصف الشاهد</th><th colspan="4">مستوى الإنجاز (تقويم اللجنة)</th><th rowspan="2">الدرجة</th><th rowspan="2" style="width:14%">سبب التصنيف</th></tr>
+      <tr>${RATES.map(([,l])=>`<th style="font-weight:500">${l}</th>`).join("")}</tr></thead>
+    <tbody>${part.map(({p,g,x})=>{ const c=x?evCode(p,x):null; const r=x?.e.rate??"";
+      return `<tr><td style="font-weight:700">${esc(p.name)}</td><td class="c">${esc(g.gen)}</td><td class="c code">${esc(g.full)}</td><td class="c">${c?c.ind:""}</td><td class="c code">${c?esc(evCodeStr(c)):""}</td><td style="font-size:10.5px">${x?esc(x.e.desc||x.t.title):""}</td>
+        ${RATES.map(([k])=>`<td class="c" style="color:#2E8B57;font-weight:800">${r!==""&&r===k?"✓":""}</td>`).join("")}<td class="c" style="font-weight:800">${r!==""?nn.format(+r):""}</td><td style="font-size:10.5px">${x?esc(x.e.rateWhy||""):""}</td></tr>`; }).join("")}</tbody></table>
+    <div style="margin-top:auto;display:flex;gap:30px;font-size:12px;color:#5E707C;padding-bottom:6px"><span>سلّم التقدير المقترح: عالٍ = ٣ · متوسط = ٢ · قليل = ١ · غير متوفر = ٠</span><span>رئيسة لجنة التقويم: ……………………</span><span>التوقيع: ……………</span></div>`}));
+    if(!rows.length) break;
+  }
+  return pages;
+}
+async function exportGlossary(){ await saveForm("المسرد-خلاصة-برامج-مؤشرات-الخطة",formDoc("المسرد · خلاصة برامج مؤشرات الخطة ١٤٤٨هـ",glossaryPages())); }
+
+/* ----- (٤) سجل متابعة برامج الخطة ----- */
+function logPages(){
+  const per=10, pages=[], ps=S.programs;
+  for(let i=0;i<ps.length;i+=per){
+    pages.push(formPage({sub:"تُحدّثه مسؤولة كل برنامج أسبوعيًا ويراجعه فريق المتابعة شهريًا",title:"سجل متابعة برامج الخطة التشغيلية ١٤٤٨هـ",num:pages.length?`صفحة ${nn.format(pages.length+1)}`:"",body:`
+    <table><thead><tr><th>الرمز</th><th>البرنامج</th><th>مسؤولة التنفيذ</th><th>من</th><th>إلى</th><th>خط الأساس ← المستهدف</th><th>الإنجاز</th><th>حالة التنفيذ</th><th>رقم الشاهد</th><th style="width:20%">فرص التحسين والإجراء التصحيحي</th></tr></thead>
+    <tbody>${ps.slice(i,i+per).map(p=>{ const st=(p.fu?.status)||progStatus(p); const evs=progEvidence(p).map(x=>evCodeStr(evCode(p,x)));
+      const evS=evs.length>3?`${evs[0]} – ${evs[evs.length-1]} (${nn.format(evs.length)})`:evs.join("، ");
+      const impr=[p.improvements,p.fu?.corrective].filter(Boolean).join(" · ");
+      return `<tr><td class="c code">${esc(goalOf(p).full)}</td><td style="font-weight:700">${esc(p.name)}</td><td style="font-size:10.5px">${esc((p.lead||[]).join(" و"))}</td><td class="c nw">${hy(p.start)}</td><td class="c nw">${hy(p.end)}</td>
+        <td class="c nw" style="color:#1F7482;font-weight:700">${esc(p.baseline||"")} ← ${esc(p.target||"")}</td><td class="c">${nn.format(progPct(p))}٪</td><td class="c"><span class="pill" style="color:${PST_C[st]};background:${PST_C[st]}1a">${PST[st]}</span></td><td class="c" style="font-size:10px;color:#2781BE">${esc(evS)}</td><td style="font-size:10px">${esc(impr.length>160?impr.slice(0,157)+"…":impr)}</td></tr>`; }).join("")}</tbody></table>
+    <div style="margin-top:auto;display:flex;gap:8px;align-items:center;font-size:12px;padding-bottom:6px;color:#5E707C"><b>مفتاح الحالة:</b>${Object.entries(PST).map(([k,l])=>`<span class="pill" style="color:${PST_C[k]};background:${PST_C[k]}1a">${l}</span>`).join("")}</div>`}));
+  }
+  return pages;
+}
+async function exportLog(){ await saveForm("سجل-متابعة-برامج-الخطة",formDoc("سجل متابعة برامج الخطة التشغيلية ١٤٤٨هـ",logPages())); }
+
+/* ----- hub ----- */
+function formsHub(){
+  return `<div class="forms-hub"><h3>${ic("award")} النماذج الرسمية · الملحق ٠١</h3><div class="fh-grid">
+    <button type="button" class="fh" data-form="fu">${ic("report")}<b>تقرير المتابعة الدوري</b><span>نموذج لكل برنامج، شهري أو فصلي</span></button>
+    <button type="button" class="fh" data-form="cards">${ic("clip")}<b>بطاقات توثيق الشواهد</b><span>بطاقة لكل شاهد مع صورته</span></button>
+    <button type="button" class="fh" data-form="gloss">${ic("list")}<b>المسرد</b><span>خلاصة الشواهد وتقويم اللجنة</span></button>
+    <button type="button" class="fh" data-form="log">${ic("gantt")}<b>سجل متابعة البرامج</b><span>كل البرامج في جدول واحد</span></button>
+  </div><div id="fh-pick" class="fh-pick" hidden><label for="fh-prog">البرنامج<select id="fh-prog">${S.programs.map(p=>`<option value="${p.id}">${esc(p.name)} (${n(progEvidence(p).length)} شاهد)</option>`).join("")}</select></label><button type="button" class="btn primary sm" id="fh-cards">${ICON.dl} تصدير البطاقات</button></div></div>`;
+}
+document.addEventListener("click",e=>{
+  const f=e.target.closest("[data-form]"); if(f){ const k=f.dataset.form, pid=f.dataset.prog;
+    if(k==="fu") openFollowup(pid);
+    else if(k==="cards"){ if(pid){ const p=progById(pid); exportCards(p,progEvidence(p)); } else { if(!document.getElementById("fh-pick")) openReport(); const pk=document.getElementById("fh-pick"); if(pk){ pk.hidden=false; pk.scrollIntoView({block:"nearest"}); } } }
+    else if(k==="gloss") exportGlossary(); else if(k==="log") exportLog(); return; }
+  if(e.target.closest("#fh-cards")){ const p=progById(document.getElementById("fh-prog").value); if(p) exportCards(p,progEvidence(p)); return; }
+  const dc=e.target.closest("[data-evdoc]"); if(dc){ const [a,b]=dc.dataset.evdoc.split("|"); openEvDoc(a,b,dc.closest(".modal")?"editor":""); return; }
+});
 
 /* ---------- events ---------- */
 document.querySelector("nav.tabs").addEventListener("click",e=>{
