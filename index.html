@@ -490,6 +490,7 @@ S.weekStart = weekStartOf(todayISO);
 /* ---------- helpers ---------- */
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const progById = id => S.programs.find(p=>p.id===id);
+const goalTxt = p => String(p?.goal||"").trim().replace(/\s*[\/／]\s*/g," / ");
 const colorOf = p => p?.color || PMETA[p?.id]?.[0] || COLORS[(S.programs.indexOf(p)+COLORS.length)%COLORS.length];
 const pct = t => t.status==="done" ? 100 : Math.max(0,Math.min(100,+t.progress||0));
 const isLate = t => t.status!=="done" && t.end && t.end < todayISO;
@@ -617,7 +618,7 @@ function vOverview(){
       <div class="pcards">${progs.map(({p,pt,v})=>`
         <div class="pcard" style="--pc:${colorOf(p)}" data-goprog="${p.id}" tabindex="0" role="button">
           <div class="pcard-top">${picon(p)}
-            <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="meta">الهدف ${esc(p.goal)} · ${esc((p.lead||[]).join("، "))}</div></div></div>
+            <div style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="meta">الهدف ${esc(goalTxt(p))} · ${esc((p.lead||[]).join("، "))}</div></div></div>
           <div class="foot"><div class="bar"><i style="width:${v}%;background:${colorOf(p)}"></i></div><span class="pct">${n(v)}٪</span></div>
           <div class="meta">${n(pt.filter(t=>t.status==="done").length)} من ${n(pt.length)} مهام منجزة${pt.some(isLate)?` · <span style="color:var(--bad)">${n(pt.filter(isLate).length)} متأخرة</span>`:""}</div>
         </div>`).join("")}</div>
@@ -649,7 +650,7 @@ function vPrograms(){
     return `<details class="prog" ${open} data-prog="${p.id}" id="prog-${p.id}" style="--pc:${colorOf(p)}">
       <summary>
         ${picon(p)}
-        <div style="min-width:0"><h3>${esc(p.name)} <span class="goal-tag">الهدف ${esc(p.goal)}</span></h3><div class="sub">${ic("cal")} ${hl(p.start)} — ${hl(p.end)} · ${n(pt.length)} مهام</div>
+        <div style="min-width:0"><h3>${esc(p.name)} <span class="goal-tag">الهدف ${esc(goalTxt(p))}</span></h3><div class="sub">${ic("cal")} ${hl(p.start)} — ${hl(p.end)} · ${n(pt.length)} مهام</div>
           <div class="bar" style="max-width:420px"><i style="width:${v}%;background:${colorOf(p)}"></i></div></div>
         <span class="pct">${n(v)}٪</span>
       </summary>
@@ -1040,7 +1041,7 @@ function buildReport(o){
   <p class="sub">${esc(filters)} — أُعدّ في ${hl(todayISO)}<br>إعداد: <b>لجنة التميز</b> · مديرة المدرسة: <b>ريم العثيم</b></p>
   <table class="sum"><tr><td><b>${n(overall)}٪</b>نسبة الإنجاز</td><td><b>${n(ts.length)}</b>مهمة</td><td><b>${n(cnt.done)}</b>منجزة</td><td><b>${n(cnt.doing)}</b>قيد التنفيذ</td><td><b>${n(cnt.late+cnt.blocked)}</b>متأخرة/متعثرة</td><td><b>${n(cnt.todo)}</b>لم تبدأ</td></tr></table>
   ${progs.map(p=>{ const pt=ts.filter(t=>t.programId===p.id).sort((a,b)=>(a.order||0)-(b.order||0)); const pv=avg(pt.map(pct));
-    return `<section><h2>${esc(p.name)} <small>الهدف ${esc(p.goal)} · إنجاز ${n(pv)}٪</small></h2>
+    return `<section><h2>${esc(p.name)} <small>الهدف ${esc(goalTxt(p))} · إنجاز ${n(pv)}٪</small></h2>
     <p class="meta">المسؤولة: ${esc((p.lead||[]).join("، "))} · المساعدات: ${esc((p.assistants||[]).join("، "))} · المؤشر: ${esc(p.baseline)} ← ${esc(p.target)}</p>
     ${p.improvements?`<div class="impr-r"><b>فرص التحسين والتطوير:</b><div style="white-space:pre-line">${esc(p.improvements)}</div></div>`:""}
     <table><thead><tr><th>المهمة</th><th>الفترة</th><th>المسؤولة</th><th>الحالة</th><th>الإنجاز</th><th>الملاحظات والرصد</th></tr></thead><tbody>
@@ -1128,10 +1129,10 @@ function progStatus(p){
   if(pt.every(t=>t.status==="todo"&&!pct(t))) return "todo";
   return "ontrack";
 }
-function goalOf(p){ const g=String(p?.goal||"").trim(); const m=g.split(/\s*[\/／]\s*/); return {gen:m[0]||"",det:m[1]||"",full:g}; }
+function goalOf(p){ const g=String(p?.goal||"").trim(); const m=g.split(/\s*[\/／]\s*/); return {gen:m[0]||"",det:m[1]||"",full:goalTxt(p)}; }
 function progEvidence(p){ let k=0; return allTasksOf(p.id).flatMap(t=>evOf(t).map(e=>({t,e,seq:++k}))); }
 function evCode(p,x){ const g=goalOf(p); return {gen:g.gen,det:g.det,ind:x.e.ind?nn.format(+x.e.ind):"١",seq:nn.format(x.seq)}; }
-const evCodeStr = c => [c.gen,c.det,c.ind,c.seq].join("/");
+const evCodeStr = c => [c.gen,c.det,c.ind,c.seq].join(" / ");
 const toNum = s => { const v=String(s??"").replace(/[٠-٩]/g,c=>"٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/[٫,]/g,".").replace(/[^\d.\-]/g,""); return v&&!isNaN(+v)?+v:null; };
 function fuDefaults(p){
   const done=allTasksOf(p.id).filter(t=>t.status==="done"||pct(t)>0);
@@ -1279,7 +1280,7 @@ async function exportCards(p,list){
   if(!list.length){ toast("لا توجد شواهد لهذا البرنامج بعد"); return; }
   toast("جارٍ تجهيز بطاقات التوثيق…");
   const pages=[]; for(const x of list) pages.push(cardPage(p,x,await evDataUrl(x.e)));
-  await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/\//g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages));
+  await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/ \/ /g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages));
 }
 function openEvDoc(taskId,evId,back){
   const t=S.tasks.find(x=>x.id===taskId); const p=progById(t?.programId); if(!t||!p) return;
