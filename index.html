@@ -1568,7 +1568,10 @@ async function bootFirebase(){
   try{ await loadScript(fbUrl("app")); await Promise.all([loadScript(fbUrl("auth")),loadScript(fbUrl("firestore"))]); }
   catch(e){ view.innerHTML='<div class="notice"><h2>تعذّر تحميل Firebase</h2><p>تأكدي من الاتصال بالإنترنت ثم أعيدي تحميل الصفحة.</p></div>'; return; }
   firebase.initializeApp(cfg); const auth=firebase.auth(), fs=firebase.firestore(); S.fbAuth=auth; S.fbStore=fs;
-  try{ await fs.enablePersistence({synchronizeTabs:true}); }catch(_){} // يحفظ نسخة محلية فتظهر الخطة فورًا في الزيارات التالية
+  try{ fs.settings({experimentalAutoDetectLongPolling:true,merge:true}); }catch(_){}
+  const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent));
+  // نسخة محلية تُسرّع الزيارات التالية على الحاسب؛ تُترك على الجوال لأنها قد تعلّق متصفح iPhone
+  if(!mobile){ try{ await Promise.race([fs.enablePersistence(),new Promise(r=>setTimeout(r,2500))]); }catch(_){} }
   auth.onAuthStateChanged(u=>{
     closeModal(); S.askedName=false; (S.unsubs||[]).forEach(f=>f()); S.unsubs=[]; S.loaded={p:false,t:false}; S.programs=[]; S.tasks=[];
     if(!u){ S.db=null; view.innerHTML=""; showLogin(auth,cfg); updateWho(); return; }
