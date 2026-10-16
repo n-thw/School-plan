@@ -1557,12 +1557,16 @@ async function bootFirebase(){
   S.MODE="firebase"; S.dl=nativeDownloads; S.evCache={};
   const cfg=window.KH_FIREBASE||{};
   if(!cfg.apiKey||/ضعي|YOUR/.test(cfg.apiKey)){ view.innerHTML='<div class="notice"><h2>التطبيق غير مربوط بقاعدة البيانات بعد</h2><p>افتحي ملف config.js وضعي فيه إعدادات مشروع Firebase كما في دليل الإعداد، ثم أعيدي تحميل الصفحة.</p></div>'; return; }
-  try{ for(const m of ["app","auth","firestore"]) await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`); }
+  view.innerHTML='<div class="notice"><h2>جارٍ تحميل الخطة…</h2></div>';
+  const fbUrl=m=>`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`;
+  try{ await loadScript(fbUrl("app")); await Promise.all([loadScript(fbUrl("auth")),loadScript(fbUrl("firestore"))]); }
   catch(e){ view.innerHTML='<div class="notice"><h2>تعذّر تحميل Firebase</h2><p>تأكدي من الاتصال بالإنترنت ثم أعيدي تحميل الصفحة.</p></div>'; return; }
   firebase.initializeApp(cfg); const auth=firebase.auth(), fs=firebase.firestore(); S.fbAuth=auth; S.fbStore=fs;
+  try{ await fs.enablePersistence({synchronizeTabs:true}); }catch(_){} // يحفظ نسخة محلية فتظهر الخطة فورًا في الزيارات التالية
   auth.onAuthStateChanged(u=>{
     closeModal(); S.askedName=false; (S.unsubs||[]).forEach(f=>f()); S.unsubs=[]; S.loaded={p:false,t:false}; S.programs=[]; S.tasks=[];
     if(!u){ S.db=null; view.innerHTML=""; showLogin(auth,cfg); updateWho(); return; }
+    view.innerHTML='<div class="notice"><h2>جارٍ تحميل الخطة…</h2></div>';
     document.getElementById("login")?.remove();
     S.isAdmin = u.email!==(cfg.staffEmail||"staff@khutta.app");
     S.canEditArt=S.isAdmin; S.canWrite=true;
