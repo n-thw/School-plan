@@ -378,6 +378,7 @@ a.ev-thumb{text-decoration:none}a.ev-name{color:var(--accent-2);text-decoration:
       </div>
       <div class="top-tools">
         <button class="btn sm who" id="whoBtn" type="button" hidden aria-label="حسابي"></button>
+        <button class="btn sm who" id="logoutBtn" type="button" hidden aria-label="تسجيل الخروج"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg><span>خروج</span></button>
         <label class="field-inline" for="personFilter"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg> المسؤولة
           <select id="personFilter"><option value="">الجميع</option></select>
         </label>
@@ -1545,10 +1546,12 @@ function openWho(first){
   </div></div>`;
   const $=s=>modalRoot.querySelector(s);
   $("#who-save").onclick=()=>{ const v=$("#who-name").value.trim(); if(!v){ $("#who-name").focus(); return; } S.uid=v; try{ localStorage.setItem("kh_name",v); }catch(_){} updateWho(); closeModal(); };
-  $("#who-out")?.addEventListener("click",()=>{ closeModal(); S.fbAuth?.signOut(); });
+  $("#who-out")?.addEventListener("click",()=>{ closeModal(); signOutNow(); });
   setTimeout(()=>$("#who-name").focus(),50);
 }
-function updateWho(){ const b=document.getElementById("whoBtn"); if(!b) return; b.hidden=S.MODE!=="firebase"; b.innerHTML=`${ic("user")}<span>${esc(S.uid||"حسابي")}${S.role==="follower"&&S.uid&&S.uid!=="مسؤولة المتابعة"?" · مسؤولة المتابعة":""}</span>`; }
+function signOutNow(){ try{ localStorage.removeItem("kh_name"); }catch(_){} S.uid=""; S.fbAuth?.signOut(); toast("تم تسجيل الخروج"); }
+document.getElementById("logoutBtn")?.addEventListener("click",signOutNow);
+function updateWho(){ const lo=document.getElementById("logoutBtn"); if(lo) lo.hidden=!(S.MODE==="firebase"&&S.db); const b=document.getElementById("whoBtn"); if(!b) return; b.hidden=S.MODE!=="firebase"; b.innerHTML=`${ic("user")}<span>${esc(S.uid||"حسابي")}${S.role==="follower"&&S.uid&&S.uid!=="مسؤولة المتابعة"?" · مسؤولة المتابعة":""}</span>`; }
 async function importSeed(btn){
   if(!S.fbStore||!window.KH_SEED) return; btn.disabled=true; btn.textContent="جارٍ الاستيراد…";
   try{ const fs=S.fbStore, sd=window.KH_SEED; const all=[...sd.programs.map(x=>["programs",x]),...sd.tasks.map(x=>["tasks",x]),["settings",{id:"main",...sd.settings}]];
