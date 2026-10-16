@@ -1498,10 +1498,10 @@ function loginCard(){
     <div class="seal">${ic("tasks")}</div>
     <h1>متابعة تنفيذ الخطة التشغيلية</h1>
     <p class="muted" id="lgHint">أدخلي رمز الدخول الذي وصلك من إدارة المدرسة</p>
-    <input type="email" id="lg-email" placeholder="البريد الإلكتروني للمشرفة" autocomplete="username" hidden>
+    <input type="email" id="lg-email" placeholder="البريد الإلكتروني" autocomplete="username" hidden>
     <input type="password" id="lg-code" placeholder="رمز الدخول" autocomplete="current-password" required>
     <button class="btn primary" type="submit" id="lgBtn">دخول</button>
-    <button class="linkish" type="button" id="lgSwitch">دخول المشرفة بالبريد الإلكتروني</button>
+    <button class="linkish" type="button" id="lgSwitch">دخول المشرفة أو مسؤولة المتابعة بالبريد</button>
     <p class="lg-err" id="lgErr" role="alert"></p>
   </form></div>`;
 }
@@ -1510,7 +1510,7 @@ function showLogin(auth,cfg){
   document.body.insertAdjacentHTML("beforeend",loginCard());
   const $=s=>document.querySelector(s); let admin=false;
   $("#lgSwitch").onclick=()=>{ admin=!admin; $("#lg-email").hidden=!admin; $("#lg-email").required=admin; $("#lg-code").placeholder=admin?"كلمة المرور":"رمز الدخول";
-    $("#lgHint").textContent=admin?"دخول المشرفة بحسابها في Firebase":"أدخلي رمز الدخول الذي وصلك من إدارة المدرسة"; $("#lgSwitch").textContent=admin?"الدخول برمز المدرسة":"دخول المشرفة بالبريد الإلكتروني"; };
+    $("#lgHint").textContent=admin?"الدخول بالبريد وكلمة المرور الخاصة بك":"أدخلي رمز الدخول الذي وصلك من إدارة المدرسة"; $("#lgSwitch").textContent=admin?"الدخول برمز المدرسة":"دخول المشرفة أو مسؤولة المتابعة بالبريد"; };
   $("#lgForm").onsubmit=async e=>{ e.preventDefault(); $("#lgErr").textContent=""; $("#lgBtn").disabled=true;
     const email=admin?$("#lg-email").value.trim():(cfg.staffEmail||"staff@khutta.app");
     try{ await auth.signInWithEmailAndPassword(email,$("#lg-code").value); }
@@ -1544,7 +1544,7 @@ function openWho(first){
   $("#who-out")?.addEventListener("click",()=>{ closeModal(); S.fbAuth?.signOut(); });
   setTimeout(()=>$("#who-name").focus(),50);
 }
-function updateWho(){ const b=document.getElementById("whoBtn"); if(!b) return; b.hidden=S.MODE!=="firebase"; b.innerHTML=`${ic("user")}<span>${esc(S.uid||"حسابي")}</span>`; }
+function updateWho(){ const b=document.getElementById("whoBtn"); if(!b) return; b.hidden=S.MODE!=="firebase"; b.innerHTML=`${ic("user")}<span>${esc(S.uid||"حسابي")}${S.role==="follower"&&S.uid&&S.uid!=="مسؤولة المتابعة"?" · مسؤولة المتابعة":""}</span>`; }
 async function importSeed(btn){
   if(!S.fbStore||!window.KH_SEED) return; btn.disabled=true; btn.textContent="جارٍ الاستيراد…";
   try{ const fs=S.fbStore, sd=window.KH_SEED; const all=[...sd.programs.map(x=>["programs",x]),...sd.tasks.map(x=>["tasks",x]),["settings",{id:"main",...sd.settings}]];
@@ -1565,7 +1565,9 @@ async function bootFirebase(){
     document.getElementById("login")?.remove();
     S.isAdmin = u.email!==(cfg.staffEmail||"staff@khutta.app");
     S.canEditArt=S.isAdmin; S.canWrite=true;
-    try{ S.uid=localStorage.getItem("kh_name")||(S.isAdmin?(cfg.adminName||"المشرفة"):""); }catch(_){ S.uid=S.isAdmin?"المشرفة":""; }
+    const acc=(cfg.accounts||{})[String(u.email||"").toLowerCase()]; S.role=S.isAdmin?(acc?.role||"admin"):"staff";
+    const defName=S.isAdmin?(acc?.name||cfg.adminName||"المشرفة"):"";
+    try{ S.uid=localStorage.getItem("kh_name")||defName; }catch(_){ S.uid=defName; }
     S.db=fbAdapter(fs); S.as=fbAssets(fs); updateWho(); render(); subscribeAll(S.db);
   });
 }
