@@ -6,6 +6,6 @@ window.KH_FIREBASE = {
   storageBucket: "school-plan1448.firebasestorage.app",
   messagingSenderId: "232049865741",
   appId: "1:232049865741:web:7d44d1fe4b4cf963429144",
-  staffEmail: "staff@khutta.app",  // حساب الدخول المشترك للمسؤولات، كلمة مروره هي رمز المدرسة
+  staffEmail: "staff@plan48.app",  // حساب الدخول المشترك للمسؤولات، كلمة مروره هي رمز المدرسة
   adminName: "نورة"                 // الاسم الذي يظهر عند دخول المشرفة
 };
