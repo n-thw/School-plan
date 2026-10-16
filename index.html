@@ -599,7 +599,7 @@ function vOverview(){
   const ts=visTasks();
   const c={done:0,doing:0,late:0,todo:0,blocked:0}; ts.forEach(t=>c[effStatus(t)]++);
   const overall=avg(ts.map(pct));
-  const ws=S.weekStart, we=iso(d(ws)+6*DAY);
+  const ws=S.weekStart, we=iso(+d(ws)+6*DAY);
   const thisWeek=ts.filter(t=>overlaps(t,ws,we)).length;
   const progs=S.programs.map(p=>{ const pt=tasksOf(p.id); return {p,pt,v:avg(pt.map(pct))}; }).filter(x=>x.pt.length);
   const ppl={}; ts.forEach(t=>(t.owners||[]).forEach(o=>{ const r=ppl[o]||(ppl[o]={all:0,done:0,late:0}); r.all++; if(t.status==="done") r.done++; if(isLate(t)) r.late++; }));
