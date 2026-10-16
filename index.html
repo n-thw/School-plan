@@ -68,6 +68,8 @@ header.top::after{content:"";position:absolute;inset:0;pointer-events:none;opaci
 header.top > .wrap{position:relative;z-index:1}
 .brand small.principal{display:inline-flex;align-items:center;gap:5px;margin-top:5px;background:rgb(255 255 255 / .14);border:1px solid rgb(255 255 255 / .25);border-radius:99px;padding:1px 10px 1px 12px;color:#fff;font-size:13px}
 .brand small.principal b{font-weight:700}
+.brand small.principal{flex-wrap:wrap;row-gap:0}.brand small.principal .pp{white-space:nowrap}
+.brand small.principal .sep{width:1px;height:12px;background:rgb(255 255 255 / .4);margin:0 4px}
 .brand small.principal svg{width:15px;height:15px;color:#f3c76b}
 @media (max-width:640px){header.top{position:relative;top:auto}.brand small{font-size:12px}.top-tools{width:100%}.top-tools .btn.gold{margin-inline-start:auto}}
 .top-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:16px 12px}
@@ -372,7 +374,7 @@ a.ev-thumb{text-decoration:none}a.ev-name{color:var(--accent-2);text-decoration:
     <div class="top-row">
       <div class="brand">
         <div class="seal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></div>
-        <div><h1>متابعة تنفيذ الخطة التشغيلية</h1><small id="todayLbl">العام الدراسي ١٤٤٨هـ</small><small class="principal"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg> مديرة المدرسة: <b>ريم العثيم</b></small></div>
+        <div><h1>متابعة تنفيذ الخطة التشغيلية</h1><small id="todayLbl">العام الدراسي ١٤٤٨هـ</small><small class="principal"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg> <span class="pp">مديرة المدرسة: <b>ريم العثيم</b></span><span class="sep" aria-hidden="true"></span><span class="pp">إعداد: <b>لجنة التميز</b></span></small></div>
       </div>
       <div class="top-tools">
         <button class="btn sm who" id="whoBtn" type="button" hidden aria-label="حسابي"></button>
@@ -1035,7 +1037,7 @@ function buildReport(o){
   const stColor={done:"#2e8b57",doing:"#d1861a",todo:"#5e707c",late:"#c8463d",blocked:"#c8463d"};
   const body=`
   <h1>${title}</h1>
-  <p class="sub">${esc(filters)} — أُعدّ في ${hl(todayISO)}<br>مديرة المدرسة: <b>ريم العثيم</b></p>
+  <p class="sub">${esc(filters)} — أُعدّ في ${hl(todayISO)}<br>إعداد: <b>لجنة التميز</b> · مديرة المدرسة: <b>ريم العثيم</b></p>
   <table class="sum"><tr><td><b>${n(overall)}٪</b>نسبة الإنجاز</td><td><b>${n(ts.length)}</b>مهمة</td><td><b>${n(cnt.done)}</b>منجزة</td><td><b>${n(cnt.doing)}</b>قيد التنفيذ</td><td><b>${n(cnt.late+cnt.blocked)}</b>متأخرة/متعثرة</td><td><b>${n(cnt.todo)}</b>لم تبدأ</td></tr></table>
   ${progs.map(p=>{ const pt=ts.filter(t=>t.programId===p.id).sort((a,b)=>(a.order||0)-(b.order||0)); const pv=avg(pt.map(pct));
     return `<section><h2>${esc(p.name)} <small>الهدف ${esc(p.goal)} · إنجاز ${n(pv)}٪</small></h2>
@@ -1161,7 +1163,7 @@ function formPage({sub,title,body,num}){
   return `<section class="page"><div class="hd"><div class="ann">الملحق ٠١ · متابعة البرامج والتوثيق</div><img src="${MOE_LOGO}" alt="وزارة التعليم"></div>
   <div class="ttl"><div><small>${esc(sub)}</small><h1>${title}</h1></div><div class="ul"></div></div>
   <div style="flex:1;min-height:0;display:flex;flex-direction:column">${body}</div>
-  <div class="ft"><b>${SCHOOL}</b><span>الخطة التشغيلية للعام الدراسي ١٤٤٨هـ${num?` · ${num}`:""}</span></div></section>`;
+  <div class="ft"><b>${SCHOOL}</b><span>إعداد: لجنة التميز · الخطة التشغيلية للعام الدراسي ١٤٤٨هـ${num?` · ${num}`:""}</span></div></section>`;
 }
 function formDoc(title,pages){
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
