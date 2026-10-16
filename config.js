@@ -1,11 +1,11 @@
-// إعدادات Firebase: انسخيها من Firebase Console > Project settings > Your apps
+// إعدادات Firebase لمشروع school-plan1448
 window.KH_FIREBASE = {
-  apiKey: "ضعي_هنا_apiKey",
-  authDomain: "اسم-المشروع.firebaseapp.com",
-  projectId: "اسم-المشروع",
-  storageBucket: "اسم-المشروع.appspot.com",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyDLc7BbAB7afssuoEFQ8dhsCw9TVlgVm7k",
+  authDomain: "school-plan1448.firebaseapp.com",
+  projectId: "school-plan1448",
+  storageBucket: "school-plan1448.firebasestorage.app",
+  messagingSenderId: "232049865741",
+  appId: "1:232049865741:web:7d44d1fe4b4cf963429144",
   staffEmail: "staff@khutta.app",  // حساب الدخول المشترك للمسؤولات، كلمة مروره هي رمز المدرسة
   adminName: "نورة"                 // الاسم الذي يظهر عند دخول المشرفة
 };
