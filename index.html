@@ -6,7 +6,11 @@
 <title>متابعة الخطة التشغيلية 1448هـ</title>
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <script src="config.js"></script>
-<script src="seed.js"></script>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
 </head>
 <body>
 <title>متابعة الخطة التشغيلية ١٤٤٨هـ</title>
@@ -1559,6 +1563,15 @@ async function importSeed(btn){
     toast("استُوردت برامج الخطة ومهامها");
   }catch(e){ btn.disabled=false; btn.textContent="إعادة المحاولة"; toast(e?.code==="permission-denied"?"قواعد Firestore تمنع الكتابة، راجعي خطوة القواعد في الدليل":"تعذّر الاستيراد، حاولي مرة أخرى"); }
 }
+/* واجهة مختصرة تحاكي Firestore compat فوق المكتبة الحديثة */
+function fsCompat(FS,db){
+  const dsnap=x=>({id:x.id,exists:x.exists(),data:()=>x.data()});
+  const qsnap=x=>({docs:x.docs.map(y=>({id:y.id,exists:true,data:()=>y.data()})),size:x.size,empty:x.empty});
+  const dref=r=>({id:r.id,path:r.path,_r:r,get:()=>FS.getDoc(r).then(dsnap),set:(d,o)=>FS.setDoc(r,d,o||{}),update:d=>FS.updateDoc(r,d),delete:()=>FS.deleteDoc(r),onSnapshot:(nx,er)=>FS.onSnapshot(r,x=>nx(dsnap(x)),er)});
+  const qry=(q,col)=>({orderBy:(f,dir)=>qry(FS.query(q,FS.orderBy(f,dir||"asc")),col),onSnapshot:(nx,er)=>FS.onSnapshot(q,x=>nx(qsnap(x)),er),add:d=>FS.addDoc(col,d).then(dref),doc:id=>dref(id?FS.doc(col,id):FS.doc(col))});
+  return {collection:nm=>{ const c=FS.collection(db,nm); return qry(c,c); },doc:p=>dref(FS.doc(db,p)),
+    batch:()=>{ const b=FS.writeBatch(db); return {set:(r,d,o)=>{ b.set(r._r,d,o||{}); },commit:()=>b.commit()}; }};
+}
 async function bootFirebase(){
   S.MODE="firebase"; S.dl=nativeDownloads; S.evCache={};
   const cfg=window.KH_FIREBASE||{};
@@ -1568,15 +1581,19 @@ async function bootFirebase(){
   const report=m=>{ const el=document.getElementById("bootDiag")||Object.assign(document.createElement("div"),{id:"bootDiag",className:"notice"}); el.innerHTML=`<h2>لم يكتمل فتح التطبيق</h2><p>توقف عند: <b>${esc(S.bootStep)}</b></p><p class="tiny" dir="ltr">${esc(m||"")} · ${esc(navigator.userAgent)}</p><p>أرسلي صورة هذه الرسالة للدعم.</p>`; if(!el.parentNode) view.prepend(el); };
   window.addEventListener("error",e=>report(e.message)); window.addEventListener("unhandledrejection",e=>report(String(e.reason?.message||e.reason)));
   setTimeout(()=>{ if(!S.loaded.p&&!document.getElementById("login")) report("انتهت المهلة"); },20000);
-  const fbUrl=m=>`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`;
-  try{ await loadScript(fbUrl("app")); await Promise.all([loadScript(fbUrl("auth")),loadScript(fbUrl("firestore"))]); }
+  // مكتبات Firebase الحديثة (modules): تسجيل دخول بلا iframe وبتخزين localStorage حتى لا يعلق Safari على iPhone
+  const B=`https://www.gstatic.com/firebasejs/${FB_VER}/`;
+  let A,AU,FS;
+  try{ [A,AU,FS]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-firestore.js")]); }
   catch(e){ view.innerHTML='<div class="notice"><h2>تعذّر تحميل Firebase</h2><p>تأكدي من الاتصال بالإنترنت ثم أعيدي تحميل الصفحة.</p></div>'; return; }
   S.bootStep="تهيئة Firebase";
-  firebase.initializeApp(cfg); const auth=firebase.auth(), fs=firebase.firestore(); S.fbAuth=auth; S.fbStore=fs;
-  try{ fs.settings({experimentalAutoDetectLongPolling:true,merge:true}); }catch(_){}
+  const app=A.initializeApp(cfg);
   const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent));
-  // نسخة محلية تُسرّع الزيارات التالية على الحاسب؛ تُترك على الجوال لأنها قد تعلّق متصفح iPhone
-  if(!mobile){ try{ await Promise.race([fs.enablePersistence(),new Promise(r=>setTimeout(r,2500))]); }catch(_){} }
+  const authM=AU.initializeAuth(app,{persistence:[AU.browserLocalPersistence,AU.inMemoryPersistence]});
+  let dbM; try{ dbM=FS.initializeFirestore(app,{experimentalAutoDetectLongPolling:true,localCache:mobile?FS.memoryLocalCache():FS.persistentLocalCache({tabManager:FS.persistentMultipleTabManager()})}); }
+  catch(_){ dbM=FS.initializeFirestore(app,{experimentalAutoDetectLongPolling:true}); }
+  const auth={signInWithEmailAndPassword:(e,pw)=>AU.signInWithEmailAndPassword(authM,e,pw),onAuthStateChanged:f=>AU.onAuthStateChanged(authM,f),signOut:()=>AU.signOut(authM)};
+  const fs=fsCompat(FS,dbM); S.fbAuth=auth; S.fbStore=fs;
   S.bootStep="التحقق من تسجيل الدخول";
   auth.onAuthStateChanged(u=>{
     S.bootStep=u?"جلب الخطة من قاعدة البيانات":"صفحة الدخول";
