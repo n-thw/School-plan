@@ -547,6 +547,48 @@ function quarters(){
   return starts.map((f,i)=>({key:"q"+(i+1),i,name:QNAMES[i],from:f,to:ends[i]}));
 }
 
+/* ---------- one-click data updates (applied once per database, recorded in settings/main.patches) ---------- */
+// 2026-10-17: Norah's Word schedule for program p10 replaces the estimated dates; existing task ids are kept so marks and evidence survive.
+const PATCHES=[{id:"p10-schedule-2026-10-17",programId:"p10",label:"مهام برنامج «أتعلم بأمان رقمي» من الجدول الزمني: ١٨ مهمة بالترتيب والتواريخ",tasks:[
+  {"id": "p10-t01", "order": 1, "start": "2026-08-30", "end": "2026-09-10", "title": "قياس قبلي باستبانة السلوك الرقمي للطالبات ومهمة أدائية بسلم التقدير"},
+  {"id": "p10-n02", "order": 2, "start": "2026-09-02", "end": "2026-09-11", "title": "إطلاق البرنامج بحملة توعوية عبر مدرستي وتيمز والإذاعة المدرسية"},
+  {"id": "p10-t04", "order": 3, "start": "2026-09-01", "end": "2026-09-02", "title": "ورشة تدريبية لوليات أمر الطالبات \"توظيف الذكاء الاصطناعي في التقويم والتعلم\""},
+  {"id": "d4w211yky889so2toq7s", "order": 4, "start": "2026-08-31", "end": "2026-09-26", "title": "مشاريع منهجية منفذة من الطالبات في الأمن السيبراني والحماية الرقمية والتنمر الإلكتروني"},
+  {"id": "p10-t03", "order": 5, "start": "2026-09-22", "end": "2026-09-24", "title": "تكوين فريق «سفيرات الأمان الرقمي»"},
+  {"id": "p10-t06", "order": 6, "start": "2026-09-13", "end": "2027-04-27", "title": "المهمة الرقمية المتناوبة بين المواد وتقديرها بالسلم الموحد مع التغذية الراجعة"},
+  {"id": "p10-t02", "order": 7, "start": "2026-09-27", "end": "2026-09-29", "title": "ورشة تدريبية لفريق السفيرات \"المدربة الواعدة- مهارات التدريب والإلقاء\""},
+  {"id": "p10-t07", "order": 8, "start": "2026-09-30", "end": "2026-09-30", "title": "ورشة تدريبية للمجتمع المحلي للتوعية بالأمن السيبراني"},
+  {"id": "n5fv3dkqbeqvbddhms8w", "order": 9, "start": "2026-10-12", "end": "2026-10-15", "title": "ورشة تدريبية لوليات أمر الطالبات \"بيئات التعلم الرقمية الآمنة\""},
+  {"id": "p10-n10", "order": 10, "start": "2026-10-20", "end": "2026-11-10", "title": "ورشة تدريبية للطالبات \"بطلة الأمن السيبراني\""},
+  {"id": "vwvtvwn2p85aodqg7hk3", "order": 11, "start": "2026-10-18", "end": "2026-10-22", "title": "ورشة تدريبية لوليات أمر الطالبات \"الأمن السيبراني\""},
+  {"id": "e63zri3tdf7bv17qtlkm", "order": 12, "start": "2026-10-25", "end": "2026-11-10", "title": "ورشة تدريبية للطالبات \"الباحثة الأمينة\""},
+  {"id": "p10-n13", "order": 13, "start": "2026-12-10", "end": "2026-12-19", "title": "قياس منتصف العام ومعالجة المعايير الأضعف"},
+  {"id": "p10-t05", "order": 14, "start": "2027-01-18", "end": "2027-01-25", "title": "إعداد ونشر ميثاق الاستخدام الآمن والمسؤول للأجهزة والذكاء الاصطناعي"},
+  {"id": "h39w1sko7iofu4ory1vp", "order": 15, "start": "2027-01-24", "end": "2027-02-07", "title": "ورشة تدريبية للطالبات الحد من التنمر الإلكتروني"},
+  {"id": "i9h91k2ahz57mts5skjr", "order": 16, "start": "2027-02-09", "end": "2027-02-15", "title": "إعداد ونشر قائمة الأدوات المعتمدة في الذكاء الاصطناعي"},
+  {"id": "a8gezolns0ehgyo127lh", "order": 17, "start": "2027-03-22", "end": "2027-03-25", "title": "إعداد ونشر «الاستخدام المسؤول للذكاء الاصطناعي»"},
+  {"id": "p10-t08", "order": 18, "start": "2027-04-27", "end": "2027-05-11", "title": "قياس نهاية العام وتحليل النتائج"}
+]}];
+const pendingPatches=()=>PATCHES.filter(x=>!(S.settings?.patches||[]).includes(x.id));
+function patchBanner(){
+  if(S.MODE!=="firebase"||!S.isAdmin||!S.loaded.t||!S.canWrite) return "";
+  return pendingPatches().map(x=>`<div class="ro-banner soft">${ic("spark")} تحديث جاهز: ${esc(x.label)} <button class="btn sm primary" type="button" data-patch="${x.id}" style="margin-inline-start:auto">تطبيق التحديث</button></div>`).join("");
+}
+async function applyPatch(id,btn){
+  const pt=PATCHES.find(x=>x.id===id); if(!pt||!S.db||!canMgr()) return; btn.disabled=true; btn.textContent="جارٍ التحديث…";
+  try{
+    const p=progById(pt.programId); let upd=0,add=0;
+    for(const it of pt.tasks){
+      if(S.tasks.some(x=>x.id===it.id)){ await S.db.doc("tasks/"+it.id).update({title:it.title,start:it.start,end:it.end,order:it.order}); upd++; }
+      else{ await S.db.doc("tasks/"+it.id).set({programId:pt.programId,title:it.title,start:it.start,end:it.end,order:it.order,owners:p?.lead||[],assistants:p?.assistants||[],status:"todo",progress:0,notes:"",deps:[],weekly:{}}); add++; }
+    }
+    let k=pt.tasks.length;   // anything else in the program keeps its place after the scheduled tasks
+    for(const t of S.tasks.filter(x=>x.programId===pt.programId&&!pt.tasks.some(i=>i.id===x.id)).sort((a,b)=>(a.order||0)-(b.order||0))){ await S.db.doc("tasks/"+t.id).update({order:++k}); }
+    await S.db.doc("settings/main").update({patches:[...(S.settings?.patches||[]),id]});
+    toast(`تم التحديث: ${n(upd)} مهمة عُدّلت و${n(add)} أُضيفت`);
+  }catch(e){ handleWriteErr(e); btn.disabled=false; btn.textContent="إعادة المحاولة"; }
+}
+
 /* ---------- writes ---------- */
 async function saveTask(id, patch){
   if(!S.db||!S.canWrite){ toast("لا تملكين صلاحية التعديل على هذه الخطة"); return false; }
@@ -597,7 +639,7 @@ function render(){
   }
   const ro = S.canWrite ? (isStaff()&&S.uid?`<div class="ro-banner soft">${ic("user")} أهلًا ${esc(S.uid)}، يمكنك تعديل مهامك ورفع شواهدها وكتابة فرص التحسين لبرامجك، وباقي الخطة وتقرير المتابعة للعرض والتصدير فقط.</div>`:"") : '<div class="ro-banner">أنتِ في وضع العرض فقط. يمكنك تصفح الخطة واستخراج التقارير، والتعديل غير متاح لحسابك.</div>';
   const fn={overview:vOverview,programs:vPrograms,gantt:vGantt,weekly:vWeekly,half:vHalf,evidence:vEvidence}[S.tab]||vOverview;
-  try{ view.innerHTML = ro + fn(); }
+  try{ view.innerHTML = ro + patchBanner() + fn(); }
   catch(err){ console.error(err); view.innerHTML=`<div class="notice"><h2>تعذّر عرض هذه الصفحة</h2><p>أرسلي صورة هذه الرسالة للدعم: <code dir="ltr">${esc((err&&err.message)||String(err))}</code></p></div>`; return; }
   if(S.tab==="gantt"){ scrollGanttToToday(); requestAnimationFrame(drawDeps); }
 }
@@ -1404,6 +1446,7 @@ view.addEventListener("click",e=>{
   const del=t.closest("[data-del]"); if(del){ openEditor(del.dataset.del); modalRoot.querySelector("#ed-del")?.click(); return; }
   const mv=t.closest("[data-move]"); if(mv){ moveTask(mv.dataset.move,+mv.dataset.dir); return; }
   const add=t.closest("[data-add]"); if(add){ openEditor(null, add.dataset.add); return; }
+  const pb=t.closest("[data-patch]"); if(pb){ applyPatch(pb.dataset.patch,pb); return; }
   const gp=t.closest("[data-goprog]"); if(gp){ S.tab="programs"; S.openProg[gp.dataset.goprog]=true; render(); document.getElementById("prog-"+gp.dataset.goprog)?.scrollIntoView({block:"start",behavior:"smooth"}); return; }
   const per=t.closest("[data-person]"); if(per){ S.person=per.dataset.person; try{localStorage.setItem("kh_person",S.person);}catch(_){} render(); return; }
   const z=t.closest("[data-zoom]"); if(z){ S.ganttZoom=+z.dataset.zoom; render(); return; }
@@ -1436,7 +1479,7 @@ view.addEventListener("change",e=>{
     if((prev.n||"")!==t.value.trim()) saveTask(task.id,{weekly:{[ws]:{s:prev.s||"",n:t.value.trim()}}}); }
   else if(t.dataset.qstart!==undefined && t.value && canMgr()){
     const qs=quarters().slice(1).map(q=>q.from); qs[+t.dataset.qstart]=t.value; qs.sort();
-    S.settings.quarterStarts=qs; S.db?.doc("settings/main").set({quarterStarts:qs}).catch(handleWriteErr); render(); }
+    S.settings.quarterStarts=qs; S.db?.doc("settings/main").update({quarterStarts:qs}).catch(handleWriteErr); render(); }
 });
 
 /* ---------- boot ---------- */
