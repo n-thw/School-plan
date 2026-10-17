@@ -1611,7 +1611,7 @@ function openWho(first){
     <div class="modal-foot"><button class="btn primary" type="button" id="who-save">${ic("check")} حفظ</button>${first?"":`<button class="btn" type="button" data-close="1">إغلاق</button><span class="sp"></span><button class="btn danger" type="button" id="who-out">تسجيل الخروج</button>`}</div>
   </div></div>`;
   const $=s=>modalRoot.querySelector(s);
-  $("#who-save").onclick=()=>{ const v=$("#who-name").value.trim(); if(!v){ $("#who-name").focus(); return; } S.uid=v; try{ localStorage.setItem("kh_name",v); }catch(_){}
+  $("#who-save").onclick=()=>{ const v=$("#who-name").value.trim(); if(!v){ $("#who-name").focus(); return; } S.uid=v; try{ localStorage.setItem(S.nameKey||"kh_name",v); }catch(_){}
     updateWho(); closeModal(); render(); };
   $("#who-out")?.addEventListener("click",()=>{ closeModal(); signOutNow(); });
   setTimeout(()=>$("#who-name").focus(),50);
@@ -1668,7 +1668,9 @@ async function bootFirebase(){
     S.canEditArt=S.isAdmin; S.canWrite=true;
     const acc=(cfg.accounts||{})[String(u.email||"").toLowerCase()]; S.role=S.isAdmin?(acc?.role||"admin"):"staff";
     const defName=S.isAdmin?(acc?.name||cfg.adminName||"المشرفة"):"";
-    try{ S.uid=localStorage.getItem("kh_name")||defName; }catch(_){ S.uid=defName; }
+    S.nameKey=S.isAdmin?"kh_name:"+String(u.email||"").toLowerCase():"kh_name";   // the supervisor's name is kept apart from a lead's pick on the same browser
+    try{ S.uid=localStorage.getItem(S.nameKey)||defName; }catch(_){ S.uid=defName; }
+    S.person=""; try{ localStorage.removeItem("kh_person"); }catch(_){}
     S.db=fbAdapter(fs); S.as=fbAssets(fs); updateWho(); render(); subscribeAll(S.db);
   });
 }
