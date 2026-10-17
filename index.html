@@ -519,7 +519,8 @@ const leadsProg = p => !!(p && S.uid && ((p.lead||[]).includes(S.uid) || S.tasks
 const mine = t => !isStaff() || !!(t && S.uid && ((t.owners||[]).includes(S.uid) || (progById(t.programId)?.lead||[]).includes(S.uid)));
 const canT = t => S.canWrite && mine(t);                       // edit this task (dates, status, progress, weekly, evidence)
 const canP = p => S.canWrite && (!isStaff() || leadsProg(p));  // add tasks to this program
-const canMgr = () => S.canWrite && !isStaff();                  // follow-up report, improvements, quarters, reordering, committee rating
+const canMgr = () => S.canWrite && !isStaff();                  // follow-up report, quarters, reordering, committee rating
+const followerName = () => Object.values(window.KH_FIREBASE?.accounts||{}).find(a=>a.role==="follower")?.name||"";
 const canUp = t => !!S.as && canT(t);
 const visTasks = () => S.tasks.filter(matchPerson);
 const tasksOf = pid => visTasks().filter(t=>t.programId===pid).sort((a,b)=>(a.order||0)-(b.order||0));
@@ -594,7 +595,7 @@ function render(){
     view.innerHTML=`<div class="notice"><h2>لا توجد برامج بعد</h2><p>${canImport?`قاعدة البيانات فارغة. استوردي برامج الخطة (${n(window.KH_SEED.programs.length)} برامج و${n(window.KH_SEED.tasks.length)} مهمة) بضغطة واحدة.`:"ستظهر هنا برامج الخطة التشغيلية ومهامها المؤرخة بعد تعبئة قاعدة البيانات."}</p>${canImport?`<button class="btn primary" id="importBtn" type="button">${ic("upload")} استيراد بيانات الخطة</button>`:""}</div>`;
     document.getElementById("importBtn")?.addEventListener("click",e=>importSeed(e.currentTarget)); return;
   }
-  const ro = S.canWrite ? (isStaff()&&S.uid?`<div class="ro-banner soft">${ic("user")} أهلًا ${esc(S.uid)}، يمكنك تعديل مهامك ورفع شواهدها، وباقي الخطة وتقرير المتابعة للعرض والتصدير فقط.</div>`:"") : '<div class="ro-banner">أنتِ في وضع العرض فقط. يمكنك تصفح الخطة واستخراج التقارير، والتعديل غير متاح لحسابك.</div>';
+  const ro = S.canWrite ? (isStaff()&&S.uid?`<div class="ro-banner soft">${ic("user")} أهلًا ${esc(S.uid)}، يمكنك تعديل مهامك ورفع شواهدها وكتابة فرص التحسين لبرامجك، وباقي الخطة وتقرير المتابعة للعرض والتصدير فقط.</div>`:"") : '<div class="ro-banner">أنتِ في وضع العرض فقط. يمكنك تصفح الخطة واستخراج التقارير، والتعديل غير متاح لحسابك.</div>';
   const fn={overview:vOverview,programs:vPrograms,gantt:vGantt,weekly:vWeekly,half:vHalf,evidence:vEvidence}[S.tab]||vOverview;
   try{ view.innerHTML = ro + fn(); }
   catch(err){ console.error(err); view.innerHTML=`<div class="notice"><h2>تعذّر عرض هذه الصفحة</h2><p>أرسلي صورة هذه الرسالة للدعم: <code dir="ltr">${esc((err&&err.message)||String(err))}</code></p></div>`; return; }
@@ -686,7 +687,7 @@ function vPrograms(){
         <div class="prog-acts"><button class="btn sm" type="button" data-form="fu" data-prog="${p.id}">${ic("report")} تقرير المتابعة الدوري</button><button class="btn sm" type="button" data-form="cards" data-prog="${p.id}">${ic("clip")} بطاقات توثيق الشواهد</button></div>
         <div class="impr">
           <label for="impr-${p.id}"><span class="fi">${ic("bulb")}</span>فرص التحسين والتطوير</label>
-          <textarea id="impr-${p.id}" data-impr="${p.id}" rows="3" placeholder="اكتبي فرص التحسين والتطوير المقترحة لهذا البرنامج، مثل: ما يحتاج إلى معالجة، ومقترحات لرفع الأثر، ودروس مستفادة…" ${canMgr()?"":"disabled"}>${esc(p.improvements||"")}</textarea>
+          <textarea id="impr-${p.id}" data-impr="${p.id}" rows="3" placeholder="اكتبي فرص التحسين والتطوير المقترحة لهذا البرنامج، مثل: ما يحتاج إلى معالجة، ومقترحات لرفع الأثر، ودروس مستفادة…" ${canP(p)?"":"disabled"}>${esc(p.improvements||"")}</textarea>
           <span class="tiny">تُحفظ تلقائيًا عند الخروج من الخانة${p.improvementsAt?" · آخر تحديث "+hl(p.improvementsAt):""}</span>
         </div>
         <div class="tbl-wrap"><table class="tasks">
@@ -1160,7 +1161,7 @@ function fuDefaults(p){
   const evs=progEvidence(p);
   const txt=done.map(t=>{ const codes=evs.filter(x=>x.t.id===t.id).map(x=>evCodeStr(evCode(p,x)));
     return `• ${t.title}${t.status==="done"?"":` (${nn.format(pct(t))}٪)`}${codes.length?` · الشواهد: ${codes.join("، ")}`:""}`; }).join("\n");
-  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.improvements||"",achieved:"",corrective:"",corrResp:(p.lead||[]).join("، "),corrDue:"",follower:S.uid&&S.MODE==="firebase"?S.uid:"",next:""};
+  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.improvements||"",achieved:"",corrective:"",corrResp:(p.lead||[]).join("، "),corrDue:"",follower:S.MODE==="firebase"?(S.role==="follower"&&S.uid?S.uid:(followerName()||S.uid||"")):"",next:""};
 }
 
 /* ----- shared page shell ----- */
@@ -1429,7 +1430,7 @@ view.addEventListener("change",e=>{
     const patch={progress:v}; if(v===100) patch.status="done"; else if(task.status==="done") patch.status="doing"; else if(v>0&&task.status==="todo") patch.status="doing";
     saveTask(task.id,patch); }
   else if(t.dataset.impr){ const pr=progById(t.dataset.impr); const v=t.value.trim();
-    if(pr && (pr.improvements||"")!==v){ if(!S.db||!canMgr()){ toast("لا تملكين صلاحية التعديل على هذه الخطة"); return; }
+    if(pr && (pr.improvements||"")!==v){ if(!S.db||!canP(pr)){ toast("يمكنك كتابة فرص التحسين لبرامجك فقط"); return; }
       S.db.doc("programs/"+pr.id).update({improvements:v,improvementsAt:todayISO}).then(()=>toast("حُفظت فرص التحسين")).catch(handleWriteErr); } }
   else if(t.dataset.note){ const task=S.tasks.find(x=>x.id===t.dataset.note); const ws=S.weekStart; const prev=task.weekly?.[ws]||{};
     if((prev.n||"")!==t.value.trim()) saveTask(task.id,{weekly:{[ws]:{s:prev.s||"",n:t.value.trim()}}}); }
@@ -1561,14 +1562,13 @@ function openWho(first){
   const all=leadNames(); const pick=isStaff();
   modalRoot.innerHTML=`<div class="modal-back" ${first?"":'data-close="1"'}><div class="modal" role="dialog" aria-modal="true" aria-labelledby="whoT" style="width:min(460px,100%)">
     <h2 id="whoT"><span class="sec-ic" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)">${ic("user")}</span>${first?"أهلًا بك، من أنتِ؟":"حسابي"}</h2>
-    <p class="muted" style="margin-top:0">${pick?"اختاري اسمك من قائمة مسؤولات البرامج. يُسجَّل اسمك مع كل تحديث وشاهد ترفعينه، وتظهر لك مهامك للتعديل.":"يُسجَّل اسمك مع كل تحديث وشاهد ترفعينه."}</p>
+    <p class="muted" style="margin-top:0">${pick?"اختاري اسمك من قائمة مسؤولات البرامج. يُسجَّل اسمك مع كل تحديث وشاهد ترفعينه، وتظهر أزرار التعديل على مهامك.":"يُسجَّل اسمك مع كل تحديث وشاهد ترفعينه."}</p>
     <div class="form"><label class="full" for="who-name">اسمك${pick?`<select id="who-name"><option value="">— اختاري اسمك —</option>${all.map(x=>`<option value="${esc(x)}" ${x===S.uid?"selected":""}>${esc(x)}</option>`).join("")}</select>`:`<input type="text" id="who-name" list="who-list" value="${esc(S.uid||"")}" placeholder="اختاري اسمك أو اكتبيه">`}</label></div>
     ${pick?`<p class="tiny">اسمك غير موجود؟ اطلبي من المشرفة إضافتك مسؤولةً عن مهمة أو برنامج.</p>`:`<datalist id="who-list">${all.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>`}
     <div class="modal-foot"><button class="btn primary" type="button" id="who-save">${ic("check")} حفظ</button>${first?"":`<button class="btn" type="button" data-close="1">إغلاق</button><span class="sp"></span><button class="btn danger" type="button" id="who-out">تسجيل الخروج</button>`}</div>
   </div></div>`;
   const $=s=>modalRoot.querySelector(s);
   $("#who-save").onclick=()=>{ const v=$("#who-name").value.trim(); if(!v){ $("#who-name").focus(); return; } S.uid=v; try{ localStorage.setItem("kh_name",v); }catch(_){}
-    if(pick&&first){ S.person=v; try{ localStorage.setItem("kh_person",v); }catch(_){} }   // open on her own tasks first
     updateWho(); closeModal(); render(); };
   $("#who-out")?.addEventListener("click",()=>{ closeModal(); signOutNow(); });
   setTimeout(()=>$("#who-name").focus(),50);

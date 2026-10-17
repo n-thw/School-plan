@@ -10,6 +10,6 @@ window.KH_FIREBASE = {
   adminName: "نورة",                // الاسم الذي يظهر عند دخول المشرفة
   // حسابات الدخول بالبريد (تُنشأ في Firebase ← Authentication ← Users)
   accounts: {
-    "follow@plan48.app": { name: "مسؤولة المتابعة", role: "follower" }
+    "follow@plan48.app": { name: "عزيزة الشمري", role: "follower" }
   }
 };
