@@ -1057,7 +1057,7 @@ function evBox(t){
     <div class="ev-head"><span class="fi">${ic("clip")}</span><b>الشواهد</b><span class="tiny">${ev.length?n(ev.length)+" ملف":"لا توجد شواهد بعد"}</span>
       ${canUp(t)?`<button class="btn sm primary" data-evup="${t.id}" type="button" style="margin-inline-start:auto">${ic("upload")} رفع شاهد</button>`:""}</div>
     ${ev.length?`<div class="ev-grid">${ev.map(e=>evTile(t,e)).join("")}</div>`:""}
-    ${canUp(t)?`<div class="ev-drop" data-evup="${t.id}">اسحبي الملفات هنا أو اضغطي للاختيار · ${S.MODE==="firebase"?"صور أو ملفات PDF · الصور تُضغط تلقائيًا، وملف PDF حتى ٧٠٠ ك.ب":"صور أو ملفات PDF (حتى ٢٠ م.ب للملف)"}</div>
+    ${canUp(t)?`<div class="ev-drop" data-evup="${t.id}">اسحبي الملفات هنا أو اضغطي للاختيار · صور أو ملفات PDF (حتى ٢٠ م.ب للملف، والصور تُضغط تلقائيًا)</div>
     <div class="ev-link"><input type="url" id="evl-${t.id}" placeholder="أو الصقي رابط الشاهد (Google Drive مثلًا)" aria-label="رابط الشاهد"><button class="btn sm" type="button" data-evlink="${t.id}">${ic("link")} إضافة رابط</button></div>`:`<p class="tiny">${S.as?"رفع الشواهد لهذه المهمة متاح للمسؤولة عنها.":"رفع الشواهد متاح لمن لديها صلاحية المساهمة في التطبيق."}</p>`}
     <div class="ev-progress" id="ev-prog-${t.id}"></div>
   </div>`;
@@ -1087,8 +1087,8 @@ async function uploadEvidence(taskId, files){
     const ext=(f.name.split(".").pop()||"").toLowerCase(); const type=EV_TYPES[ext]||f.type;
     if(!Object.values(EV_TYPES).includes(type)){ toast(`«${f.name}»: يُسمح بالصور وملفات PDF فقط`); continue; }
     if(f.size>20*1048576){ toast(`«${f.name}» أكبر من ٢٠ م.ب`); continue; }
-    try{ const r=await S.as.upload(f,{type}); added.push({id:r.id,name:f.name,type:r.contentType||type,size:r.sizeBytes||f.size,at:todayISO,by:S.uid||""}); }
-    catch(e){ const m={too_large:S.MODE==="firebase"?"أكبر من ٧٠٠ ك.ب، ارفعيه على Google Drive وأضيفي رابطه":"الملف كبير جدًا",unsupported_type:"الصيغة غير مدعومة، حوّليه إلى PDF أو صورة",quota_or_state:"امتلأت مساحة الشواهد في التطبيق",rate_limited:"محاولات كثيرة، انتظري قليلًا ثم أعيدي"}[e?.code]||"تعذّر الرفع، حاولي مرة أخرى"; toast(`«${f.name}»: ${m}`); if(e?.code==="rate_limited"||e?.code==="quota_or_state") break; }
+    try{ const r=await S.as.upload(f,{type},(k,of)=>{ const q=prog(); if(q) q.textContent=`جارٍ رفع ${n(i)} من ${n(files.length)}: ${f.name} · جزء ${n(k)} من ${n(of)}`; }); added.push({id:r.id,name:f.name,type:r.contentType||type,size:r.sizeBytes||f.size,at:todayISO,by:S.uid||""}); }
+    catch(e){ const m={too_large:"أكبر من ٢٠ م.ب، ارفعيه على Google Drive وأضيفي رابطه",unsupported_type:"الصيغة غير مدعومة، حوّليه إلى PDF أو صورة",quota_or_state:"امتلأت مساحة الشواهد في التطبيق",rate_limited:"محاولات كثيرة، انتظري قليلًا ثم أعيدي"}[e?.code]||"تعذّر الرفع، حاولي مرة أخرى"; toast(`«${f.name}»: ${m}`); if(e?.code==="rate_limited"||e?.code==="quota_or_state") break; }
   }
   const p=prog(); if(p) p.textContent="";
   if(!added.length) return;
@@ -1144,6 +1144,7 @@ function vEvidence(){
     ${stat("tasks",n(withEv.length),"مهمة لها شواهد","var(--accent-2)","color-mix(in srgb,var(--accent-2) 14%,transparent)")}
     ${stat("done",n(cover)+"٪","من المهام المنجزة موثّقة بشواهد","var(--ok)","var(--ok-soft)")}
     ${stat("alert",n(doneNo.length),"منجزة بلا شواهد","var(--bad)","var(--bad-soft)")}
+    ${S.MODE==="firebase"&&canMgr()?(()=>{ const used=S.tasks.reduce((a,t)=>a+evOf(t).reduce((b,e)=>b+(e.link?0:(e.size||0)*1.34),0),0); const mb=used/1048576, pctU=Math.min(100,Math.round(mb/1024*100)); return stat("upload",n(Math.round(mb))+" م.ب",`المستخدم من سعة الملفات المجانية (١٠٢٤ م.ب) · ${n(pctU)}٪`,pctU>80?"var(--bad)":"","" ); })():""}
   </div>
   ${S.as?"":'<div class="ro-banner">'+ic("clip")+' يمكنك عرض الشواهد، والرفع متاح لمن لديها صلاحية المساهمة في التطبيق.</div>'}
   ${doneNo.length?`<section class="panel" style="margin-bottom:18px">${sec("alert","مهام منجزة تحتاج إلى شواهد")}
@@ -1617,20 +1618,26 @@ async function shrinkImage(file){
   }
   return out;
 }
+const EV_MAX=20*1048576, EV_CHUNK=600*1024;   // Firestore documents hold ~1 MiB, so larger files are stored as 600 KB pieces in evchunks/{id}_{i}
 function fbAssets(fs){
-  const col=fs.collection("evidence");
+  const col=fs.collection("evidence"), chunks=fs.collection("evchunks");
+  const b64Parts=async blob=>{ const out=[]; for(let o=0;o<blob.size;o+=EV_CHUNK) out.push(await blobToB64(blob.slice(o,o+EV_CHUNK))); return out; };
+  const assemble=async x=>{ if(x.data!==undefined) return b64ToBlob(x.data,x.type); const parts=[]; for(let i=0;i<x.chunks;i++){ const c=await chunks.doc(x.chunkId+"_"+i).get(); if(!c.exists) throw {code:"not_found"}; parts.push(b64ToBlob(c.data().data,x.type)); } return new Blob(parts,{type:x.type}); };
   return {
-    async upload(file,opts){
+    async upload(file,opts,onStep){
       let blob=await shrinkImage(file); const type=blob===file?(opts?.type||file.type):"image/jpeg";
-      if(blob.size>700*1024) throw {code:"too_large"};
-      const data=await blobToB64(blob);
-      const ref=await col.add({name:file.name,type,size:blob.size,data,at:todayISO,by:S.uid||""}).catch(fbErr);
-      S.evCache[ref.id]=`data:${type};base64,${data}`;
-      return {id:ref.id,url:S.evCache[ref.id],sizeBytes:blob.size,contentType:type};
+      if(blob.size>EV_MAX) throw {code:"too_large"};
+      if(blob.size<=EV_CHUNK){ const data=await blobToB64(blob); const ref=await col.add({name:file.name,type,size:blob.size,data,at:todayISO,by:S.uid||""}).catch(fbErr); S.evCache[ref.id]=`data:${type};base64,${data}`; return {id:ref.id,url:S.evCache[ref.id],sizeBytes:blob.size,contentType:type}; }
+      const parts=await b64Parts(blob); const chunkId="c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      for(let i=0;i<parts.length;i++){ onStep?.(i+1,parts.length); await chunks.doc(chunkId+"_"+i).set({data:parts[i],i,of:parts.length,at:todayISO}).catch(fbErr); }
+      const ref=await col.add({name:file.name,type,size:blob.size,chunks:parts.length,chunkId,at:todayISO,by:S.uid||""}).catch(fbErr);
+      return {id:ref.id,url:"",sizeBytes:blob.size,contentType:type};
     },
-    async delete(id){ await col.doc(id).delete().catch(fbErr); delete S.evCache[id]; return {deleted:true}; },
-    async blob(id){ const s=await col.doc(id).get(); if(!s.exists) throw {code:"not_found"}; const x=s.data(); return b64ToBlob(x.data,x.type); },
-    async src(id){ if(S.evCache[id]) return S.evCache[id]; const s=await col.doc(id).get(); if(!s.exists) return ""; const x=s.data(); return (S.evCache[id]=`data:${x.type};base64,${x.data}`); }
+    async delete(id){ const s=await col.doc(id).get().catch(()=>null); const x=s?.exists?s.data():null;
+      if(x?.chunks){ for(let i=0;i<x.chunks;i++) await chunks.doc(x.chunkId+"_"+i).delete().catch(()=>{}); }
+      await col.doc(id).delete().catch(fbErr); delete S.evCache[id]; return {deleted:true}; },
+    async blob(id){ const s=await col.doc(id).get(); if(!s.exists) throw {code:"not_found"}; return assemble(s.data()); },
+    async src(id){ if(S.evCache[id]) return S.evCache[id]; const s=await col.doc(id).get(); if(!s.exists) return ""; const x=s.data(); if(x.data===undefined){ const b=await assemble(x); return (S.evCache[id]=URL.createObjectURL(b)); } return (S.evCache[id]=`data:${x.type};base64,${x.data}`); }
   };
 }
 const nativeDownloads={ async save({filename,data}){ const ext=filename.split(".").pop(); const type={html:"text/html;charset=utf-8",csv:"text/csv;charset=utf-8"}[ext]||"application/octet-stream";
