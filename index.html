@@ -469,7 +469,7 @@ const picon = (p,sm) => `<span class="picon${sm?" sm":""}" style="--pc:${colorOf
 const stat = (icon,val,label,c,soft,big) => `<div class="stat${big?" big":""}" style="${c?`--c:${c};--c-soft:${soft}`:""}"><span class="ic">${ic(icon)}</span><b>${val}</b><span>${label}</span></div>`;
 const sec = (icon,title,extra="") => `<h2 class="sec"${extra}><span class="sec-ic">${ic(icon)}</span>${title}</h2>`;
 const S = {programs:[], tasks:[], settings:{quarterStarts:["2026-11-11","2027-02-08","2027-05-07"]}, tab:"overview", person:"", weekStart:null,
-  ganttZoom:4, ganttOpen:{}, openProg:{}, canWrite:true, db:null, loaded:{p:false,t:false}, dl:null, pendingRender:false};
+  ganttZoom:4, ganttOpen:{}, openProg:{}, canWrite:true, db:null, loaded:{p:false,t:false,s:false}, dl:null, pendingRender:false};
 
 try{ const t=localStorage.getItem("kh_tab"); if(t) S.tab=t; S.person=localStorage.getItem("kh_person")||""; }catch(e){}
 
@@ -684,7 +684,7 @@ const PATCHES=[
 ];
 const pendingPatches=()=>PATCHES.filter(x=>!(S.settings?.patches||[]).includes(x.id));
 function patchBanner(){
-  if(S.MODE!=="firebase"||!S.isAdmin||!S.loaded.t||!S.canWrite) return "";
+  if(S.MODE!=="firebase"||!S.isAdmin||!S.loaded.t||!S.loaded.s||!S.canWrite) return ""; // لا يُعرض الشريط قبل وصول سجل التحديثات المطبَّقة، كي لا يظهر ويختفي
   return pendingPatches().map(x=>`<div class="ro-banner soft">${ic("spark")} تحديث جاهز: ${esc(x.label)} <button class="btn sm primary" type="button" data-patch="${x.id}" style="margin-inline-start:auto">تطبيق التحديث</button></div>`).join("");
 }
 async function applyPatch(id,btn){
@@ -1629,7 +1629,7 @@ function subscribeAll(db){
   S.unsubs=[
     db.collection("programs").orderBy("order").onSnapshot(s=>{ S.programs=s.docs.map(x=>({id:x.id,...x.data()})); S.loaded.p=true; render(); },onErr),
     db.collection("tasks").onSnapshot(s=>{ S.tasks=s.docs.map(x=>({id:x.id,...x.data()})); S.loaded.t=true; render(); refreshEvBoxes(); askNameIfNeeded(); },onErr),
-    db.doc("settings/main").onSnapshot(s=>{ if(s.exists){ S.settings={...S.settings,...s.data()}; render(); } },()=>{})
+    db.doc("settings/main").onSnapshot(s=>{ if(s.exists) S.settings={...S.settings,...s.data()}; S.loaded.s=true; render(); },()=>{ S.loaded.s=true; render(); })
   ];
 }
 async function bootClaude(cl){
@@ -1799,7 +1799,7 @@ async function bootFirebase(){
   S.bootStep="التحقق من تسجيل الدخول";
   auth.onAuthStateChanged(u=>{
     S.bootStep=u?"جلب الخطة من قاعدة البيانات":"صفحة الدخول";
-    closeModal(); S.askedName=false; (S.unsubs||[]).forEach(f=>f()); S.unsubs=[]; S.loaded={p:false,t:false}; S.programs=[]; S.tasks=[];
+    closeModal(); S.askedName=false; (S.unsubs||[]).forEach(f=>f()); S.unsubs=[]; S.loaded={p:false,t:false,s:false}; S.programs=[]; S.tasks=[];
     if(!u){ S.db=null; view.innerHTML=""; showLogin(auth,cfg); updateWho(); return; }
     view.innerHTML='<div class="notice"><h2>جارٍ تحميل الخطة…</h2></div>';
     document.getElementById("login")?.remove();
