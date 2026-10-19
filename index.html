@@ -1418,14 +1418,26 @@ function openFollowup(pid){
 }
 
 /* ----- (٢) بطاقة توثيق شاهد ----- */
-async function evDataUrl(e){
-  if(e.link||!/^image\//.test(e.type||"")) return "";
-  try{ let b; if(S.as?.blob) b=await S.as.blob(e.id); else { const r=await fetch("/_blob/"+e.id); if(!r.ok) throw 0; b=await r.blob(); }
-    return `data:${e.type};base64,${await blobToB64(b)}`; }catch(_){ return ""; }
+const PDFJS_URL="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+let pdfjsP=null;
+const pdfjs=()=>pdfjsP||(pdfjsP=(async()=>{ if(!window.pdfjsLib) await loadScript(PDFJS_URL+"pdf.min.js"); window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_URL+"pdf.worker.min.js"; return window.pdfjsLib; })().catch(e=>{ pdfjsP=null; throw e; }));
+async function evBlob(e){ if(S.as?.blob) return S.as.blob(e.id); const r=await fetch("/_blob/"+e.id); if(!r.ok) throw 0; return r.blob(); }
+async function pdfPreview(blob){
+  const lib=await pdfjs(); const doc=await lib.getDocument({data:await blob.arrayBuffer()}).promise;
+  try{ const pg=await doc.getPage(1); const v0=pg.getViewport({scale:1}); const vp=pg.getViewport({scale:Math.min(2.5,1200/Math.max(1,v0.width))});
+    const cv=document.createElement("canvas"); cv.width=Math.ceil(vp.width); cv.height=Math.ceil(vp.height); const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);
+    await pg.render({canvasContext:ctx,viewport:vp}).promise; return {img:cv.toDataURL("image/jpeg",0.86),pages:doc.numPages}; }
+  finally{ try{ doc.destroy(); }catch(_){} }
 }
-function cardPage(p,x,img){
+async function evPreview(e){
+  if(e.link) return null;
+  try{ if(/^image\//.test(e.type||"")) return {img:`data:${e.type};base64,${await blobToB64(await evBlob(e))}`};
+    if(e.type==="application/pdf"||/\.pdf$/i.test(e.name||"")) return await pdfPreview(await evBlob(e)); }catch(_){}
+  return null;
+}
+function cardPage(p,x,pv){
   const e=x.e, c=evCode(p,x);
-  const slot=img?`<img src="${img}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px">`
+  const slot=pv?.img?`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;height:100%;min-height:0"><img src="${pv.img}" alt="" style="flex:1;min-height:0;max-width:100%;object-fit:contain;border-radius:6px;border:1px solid #DCE6EA;background:#fff">${pv.pages?`<small style="font-size:10.5px;color:#5E707C">الصفحة الأولى من ملف PDF${pv.pages>1?` · ${pv.pages} صفحات`:""}${e.name?` · <span style="direction:ltr;unicode-bidi:embed">${esc(e.name)}</span>`:""}</small>`:""}</div>`
     :`<div style="text-align:center;color:#8A9AA5"><div style="font-size:34px">${e.link?"🔗":(e.type==="application/pdf"?"📄":"🖼️")}</div><b style="display:block;color:#5E707C;font-size:15px;margin:4px 0">${e.link?"شاهد على رابط":e.type==="application/pdf"?"ملف PDF مرفق":"موضع الشاهد"}</b><div style="font-size:11.5px;direction:ltr;word-break:break-all">${esc(e.link||e.name||"")}</div></div>`;
   const nb=(v,l)=>`<div style="text-align:center"><div style="border:1px solid #9CC4E4;border-radius:7px;background:#fff;height:30px;min-width:66px;display:grid;place-items:center;font-weight:800;color:#2781BE;font-size:15px">${esc(v)}</div><div style="font-size:10px;color:#5E707C;margin-top:3px">${l}</div></div>`;
   return formPage({sub:"تُرفق مع كل شاهد",title:"نموذج (٢): بطاقة توثيق شاهد",body:`
@@ -1448,7 +1460,7 @@ function cardPage(p,x,img){
 async function exportCards(p,list){
   if(!list.length){ toast("لا توجد شواهد لهذا البرنامج بعد"); return; }
   toast("جارٍ تجهيز بطاقات التوثيق…");
-  const pages=[]; for(const x of list) pages.push(cardPage(p,x,await evDataUrl(x.e)));
+  const pages=[]; for(const x of list) pages.push(cardPage(p,x,await evPreview(x.e)));
   await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/ \/ /g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages));
 }
 function openEvDoc(taskId,evId,back){
