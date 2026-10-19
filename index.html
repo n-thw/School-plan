@@ -523,7 +523,8 @@ const canMgr = () => S.canWrite && !isStaff();                  // follow-up rep
 const followerName = () => Object.values(window.KH_FIREBASE?.accounts||{}).find(a=>a.role==="follower")?.name||"";
 const canUp = t => !!S.as && canT(t);
 const visTasks = () => S.tasks.filter(matchPerson);
-const tasksOf = pid => visTasks().filter(t=>t.programId===pid).sort((a,b)=>(a.order||0)-(b.order||0));
+const byDate = (a,b) => (a.start||"").localeCompare(b.start||"") || (a.end||"").localeCompare(b.end||"") || (a.order||0)-(b.order||0) || a.id.localeCompare(b.id); // الترتيب داخل البرنامج حسب تاريخ البداية ثم النهاية
+const tasksOf = pid => visTasks().filter(t=>t.programId===pid).sort(byDate);
 const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0;
 const overlaps = (t,a,b) => t.start<=b && t.end>=a;
 const ICON = {
@@ -837,15 +838,15 @@ function vPrograms(){
         </div>
         <div class="tbl-wrap"><table class="tasks">
           <thead><tr><th style="width:34px">#</th><th>المهمة</th><th>من</th><th>إلى</th><th>المسؤولة / المساعدات</th><th>الحالة</th><th>الإنجاز</th><th></th></tr></thead>
-          <tbody>${pt.map(t=>`<tr>
-            <td><span class="num">${n(t.order||"")}</span></td>
+          <tbody>${pt.map((t,ti)=>`<tr>
+            <td><span class="num">${n(ti+1)}</span></td>
             <td>${esc(t.title)} ${evChip(t)}${depNote(t)}${t.notes?`<div class="tiny">${esc(t.notes)}</div>`:""}</td>
             <td class="dates">${h(t.start)}</td><td class="dates">${h(t.end)}</td>
             <td class="who">${esc((t.owners||[]).join("، "))}<div class="as">${esc((t.assistants||[]).join("، "))}</div></td>
             <td><select data-status="${t.id}" aria-label="حالة المهمة" ${canT(t)?"":"disabled"}>${Object.entries(ST).map(([k,l])=>`<option value="${k}" ${t.status===k?"selected":""}>${l}</option>`).join("")}</select>
               ${isLate(t)?'<div><span class="pill s-late" style="margin-top:4px">متأخرة</span></div>':""}</td>
             <td><div class="mini"><input type="range" min="0" max="100" step="10" value="${pct(t)}" data-prog-input="${t.id}" aria-label="نسبة الإنجاز" ${canT(t)?"":"disabled"} style="width:80px"><span>${n(pct(t))}٪</span></div></td>
-            <td><div class="row-actions">${canMgr()&&!S.person?`<button class="icon-btn" data-move="${t.id}" data-dir="-1" title="نقل لأعلى" aria-label="نقل المهمة لأعلى">${ic("up")}</button><button class="icon-btn" data-move="${t.id}" data-dir="1" title="نقل لأسفل" aria-label="نقل المهمة لأسفل">${ic("down")}</button>`:""}<button class="icon-btn" data-edit="${t.id}" title="تعديل المهمة" aria-label="تعديل المهمة">${ICON.edit}</button>${canT(t)?`<button class="icon-btn del" data-del="${t.id}" title="حذف المهمة" aria-label="حذف المهمة">${ic("trash")}</button>`:""}</div></td>
+            <td><div class="row-actions"><button class="icon-btn" data-edit="${t.id}" title="تعديل المهمة" aria-label="تعديل المهمة">${ICON.edit}</button>${canT(t)?`<button class="icon-btn del" data-del="${t.id}" title="حذف المهمة" aria-label="حذف المهمة">${ic("trash")}</button>`:""}</div></td>
           </tr>`).join("")}</tbody></table></div>
         ${canP(p)?`<div style="margin-top:12px"><button class="btn sm" data-add="${p.id}">${ICON.plus} إضافة مهمة</button></div>`:""}
       </div></details>`;
@@ -935,7 +936,7 @@ function vWeekly(){
   const marks=ts.map(t=>t.weekly?.[ws]?.s).filter(Boolean);
   const done=marks.filter(m=>m==="done").length, part=marks.filter(m=>m==="part").length, none=marks.filter(m=>m==="none").length;
   const isNow = ws===weekStartOf(todayISO);
-  const groups=S.programs.map(p=>({p,items:ts.filter(t=>t.programId===p.id).sort((a,b)=>(a.order||0)-(b.order||0))})).filter(g=>g.items.length);
+  const groups=S.programs.map(p=>({p,items:ts.filter(t=>t.programId===p.id).sort(byDate)})).filter(g=>g.items.length);
   const ending=ts.filter(t=>t.end>=ws&&t.end<=weFull);
   return `<div class="wk-nav">
       <button class="btn sm" data-wk="-1" aria-label="الأسبوع السابق">${ICON.prev} السابق</button>
@@ -1002,7 +1003,7 @@ function openEditor(id, newFor){
     <form class="form" id="edForm">
       <label class="full">المهمة<input type="text" id="ed-title" required value="${esc(v.title)}" ${ro?"disabled":""}></label>
       <label class="full">البرنامج<select id="ed-prog" ${ro?"disabled":""}>${progs.map(x=>`<option value="${x.id}" ${x.id===p?.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select></label>
-      <label class="full">تعتمد على (لا تبدأ إلا بعد انتهاء)<select id="ed-dep" ${ro?"disabled":""}><option value="">— لا تعتمد على مهمة أخرى —</option>${S.programs.map(pr=>{ const opts=S.tasks.filter(x=>x.programId===pr.id && (!t || (x.id!==t.id && !dependsOn(x.id,t.id)))).sort((a,b)=>(a.order||0)-(b.order||0)); return opts.length?`<optgroup label="${esc(pr.name)}">${opts.map(x=>`<option value="${x.id}" ${(v.deps||[])[0]===x.id?"selected":""}>${esc(x.title)}</option>`).join("")}</optgroup>`:""; }).join("")}</select><span class="hint" id="ed-dep-h"></span></label>
+      <label class="full">تعتمد على (لا تبدأ إلا بعد انتهاء)<select id="ed-dep" ${ro?"disabled":""}><option value="">— لا تعتمد على مهمة أخرى —</option>${S.programs.map(pr=>{ const opts=S.tasks.filter(x=>x.programId===pr.id && (!t || (x.id!==t.id && !dependsOn(x.id,t.id)))).sort(byDate); return opts.length?`<optgroup label="${esc(pr.name)}">${opts.map(x=>`<option value="${x.id}" ${(v.deps||[])[0]===x.id?"selected":""}>${esc(x.title)}</option>`).join("")}</optgroup>`:""; }).join("")}</select><span class="hint" id="ed-dep-h"></span></label>
       <label>تاريخ البداية<input type="date" id="ed-start" required value="${v.start}" ${ro?"disabled":""}><span class="hint" id="ed-start-h">${hl(v.start)}</span></label>
       <label>تاريخ النهاية<input type="date" id="ed-end" required value="${v.end}" ${ro?"disabled":""}><span class="hint" id="ed-end-h">${hl(v.end)}</span></label>
       <label>المسؤولة<input type="text" id="ed-owners" list="ppl" value="${esc((v.owners||[]).join("، "))}" ${lockOwn?"disabled":""}><span class="hint">${lockOwn&&!ro?"المهمة باسمك":"افصلي بين الأسماء بفاصلة"}</span></label>
@@ -1166,7 +1167,7 @@ function vEvidence(){
   const files=withEv.reduce((a,t)=>a+evOf(t).length,0);
   const doneAll=ts.filter(t=>t.status==="done").length;
   const cover=doneAll?Math.round((doneAll-doneNo.length)/doneAll*100):0;
-  const groups=S.programs.map(p=>({p,items:withEv.filter(t=>t.programId===p.id).sort((a,b)=>(a.order||0)-(b.order||0))})).filter(g=>g.items.length);
+  const groups=S.programs.map(p=>({p,items:withEv.filter(t=>t.programId===p.id).sort(byDate)})).filter(g=>g.items.length);
   return `<div class="prog-acts" style="justify-content:flex-end"><button class="btn sm primary" type="button" data-form="gloss">${ic("list")} المسرد · خلاصة الشواهد</button><button class="btn sm" type="button" data-form="cards">${ic("clip")} بطاقات توثيق الشواهد</button></div>
   <div class="stats">
     ${stat("clip",n(files),"ملف شاهد مرفوع","","",true)}
@@ -1208,7 +1209,7 @@ function buildReport(o){
   <h1>${title}</h1>
   <p class="sub">${esc(filters)} — أُعدّ في ${hl(todayISO)}<br>إعداد: <b>لجنة التميز</b> · مديرة المدرسة: <b>ريم العثيم</b></p>
   <table class="sum"><tr><td><b>${n(overall)}٪</b>نسبة الإنجاز</td><td><b>${n(ts.length)}</b>مهمة</td><td><b>${n(cnt.done)}</b>منجزة</td><td><b>${n(cnt.doing)}</b>قيد التنفيذ</td><td><b>${n(cnt.late+cnt.blocked)}</b>متأخرة/متعثرة</td><td><b>${n(cnt.todo)}</b>لم تبدأ</td></tr></table>
-  ${progs.map(p=>{ const pt=ts.filter(t=>t.programId===p.id).sort((a,b)=>(a.order||0)-(b.order||0)); const pv=avg(pt.map(pct));
+  ${progs.map(p=>{ const pt=ts.filter(t=>t.programId===p.id).sort(byDate); const pv=avg(pt.map(pct));
     return `<section><h2>${esc(p.name)} <small>الهدف ${esc(goalTxt(p))} · إنجاز ${n(pv)}٪</small></h2>
     <p class="meta">المسؤولة: ${esc((p.lead||[]).join("، "))} · المساعدات: ${esc((p.assistants||[]).join("، "))} · المؤشر: ${esc(p.baseline)} ← ${esc(p.target)}</p>
     ${p.improvements?`<div class="impr-r"><b>فرص التحسين والتطوير:</b><div style="white-space:pre-line">${esc(p.improvements)}</div></div>`:""}
@@ -1263,7 +1264,7 @@ function openReport(){
   $("#rp-csv").onclick=async()=>{
     const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
     const rows=[["البرنامج","المهمة","البداية (هجري)","النهاية (هجري)","البداية","النهاية","المسؤولة","المساعدات","الحالة","الإنجاز %","ملاحظات"]];
-    cur.ts.sort((a,b)=>a.programId.localeCompare(b.programId)||(a.order||0)-(b.order||0)).forEach(t=>rows.push([progById(t.programId)?.name,t.title,h(t.start),h(t.end),t.start,t.end,(t.owners||[]).join("، "),(t.assistants||[]).join("، "),stLabel(t),pct(t),t.notes]));
+    cur.ts.sort((a,b)=>a.programId.localeCompare(b.programId)||byDate(a,b)).forEach(t=>rows.push([progById(t.programId)?.name,t.title,h(t.start),h(t.end),t.start,t.end,(t.owners||[]).join("، "),(t.assistants||[]).join("، "),stLabel(t),pct(t),t.notes]));
     const csv="﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n");
     try{ await S.dl.save({filename:fname("csv"),data:csv}); toast("حُفظ الجدول"); }catch(e){ dlErr(e); }
   };
@@ -1287,7 +1288,7 @@ const hy = s => { if(!s) return "……/……/١٤٤٨هـ"; const p=hParts(+d(
 const PST={todo:"لم يبدأ",ontrack:"جارٍ حسب الخطة",late:"جارٍ مع تأخر",blocked:"متعثر",done:"مكتمل"};
 const PST_C={todo:"#8A9AA5",ontrack:"#2E8B57",late:"#B0661A",blocked:"#B03A48",done:"#2781BE"};
 const RATES=[["3","عالٍ"],["2","متوسط"],["1","قليل"],["0","غير متوفر"]];
-const allTasksOf = pid => S.tasks.filter(t=>t.programId===pid).sort((a,b)=>(a.order||0)-(b.order||0));
+const allTasksOf = pid => S.tasks.filter(t=>t.programId===pid).sort(byDate);
 const progPct = p => avg(allTasksOf(p.id).map(pct));
 function progStatus(p){
   const pt=allTasksOf(p.id); if(!pt.length) return "todo";
