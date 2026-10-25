@@ -1356,7 +1356,7 @@ function fuDefaults(p){
   const evs=progEvidence(p);
   const txt=done.map(t=>{ const codes=evs.filter(x=>x.t.id===t.id).map(x=>evCodeStr(evCode(p,x)));
     return `• ${t.title}${t.status==="done"?"":` (${nn.format(pct(t))}٪)`}${codes.length?` · الشواهد: ${codes.join("، ")}`:""}`; }).join("\n");
-  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.challenges||"",achieved:"",corrective:"",corrResp:(p.lead||[]).join("، "),corrDue:"",follower:S.MODE==="firebase"?(S.role==="follower"&&S.uid?S.uid:(followerName()||S.uid||"")):"",next:""};
+  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.challenges||"",impr:p.improvements||"",achieved:"",corrective:"",corrResp:"",corrDue:"",follower:S.MODE==="firebase"?(S.role==="follower"&&S.uid?S.uid:(followerName()||S.uid||"")):"",next:""};
 }
 
 /* ----- shared page shell ----- */
@@ -1414,7 +1414,7 @@ function fuPage(p,fu){
   </div>
   <div class="g" style="grid-template-columns:1fr 1fr;flex:1;min-height:0">
     <div class="box" style="overflow:hidden"><span class="l">ما تم إنجازه (مع أرقام الشواهد)</span><div class="v" style="font-size:11.5px">${esc(fu.done||"")}</div></div>
-    <div class="box" style="overflow:hidden"><span class="l">أبرز التحديات وفرص التحسين</span><div class="v" style="font-size:11.5px">${esc(fu.challenges||"")}</div></div>
+    <div class="box" style="overflow:hidden"><span class="l">أبرز التحديات وفرص التحسين</span><div class="v" style="font-size:11.5px;white-space:pre-line">${fu.challenges?`<b style="color:#B03A48">التحديات والصعوبات:</b>\n${esc(fu.challenges)}`:""}${fu.challenges&&fu.impr?"\n\n":""}${fu.impr?`<b style="color:#1F7482">فرص التحسين والتطوير:</b>\n${esc(fu.impr)}`:""}</div></div>
   </div>
   <div class="g" style="grid-template-columns:1fr 1fr">
     <table><thead><tr><th>مؤشر البرنامج</th><th>المستهدف</th><th>المتحقق</th><th>الفرق</th></tr></thead><tbody>
@@ -1441,8 +1441,9 @@ function openFollowup(pid){
       <label>تاريخ المتابعة<input type="date" id="fu-date" value="${fu.date}"></label>
       <label>حالة التنفيذ<select id="fu-status"><option value="">تلقائي: ${PST[progStatus(p)]}</option>${Object.entries(PST).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></label>
       <label>نسبة الإنجاز<input type="text" value="${n(progPct(p))}٪ (محسوبة من المهام)" disabled></label>
-      <label class="full">ما تم إنجازه (مع أرقام الشواهد) <button type="button" class="btn sm" id="fu-auto" style="align-self:flex-start">${ic("spark")} تعبئة من المهام والشواهد</button><textarea id="fu-done" rows="5">${esc(fu.done)}</textarea></label>
-      <label class="full">أبرز التحديات وفرص التحسين<textarea id="fu-ch" rows="3">${esc(fu.challenges)}</textarea></label>
+      <label class="full">ما تم إنجازه (مع أرقام الشواهد) <button type="button" class="btn sm" id="fu-auto" style="align-self:flex-start">${ic("spark")} تعبئة من المهام والشواهد وخانات البرنامج</button><textarea id="fu-done" rows="5">${esc(fu.done)}</textarea></label>
+      <label class="full">أبرز التحديات والصعوبات<textarea id="fu-ch" rows="3">${esc(fu.challenges)}</textarea></label>
+      <label class="full">فرص التحسين والتطوير<textarea id="fu-impr" rows="3">${esc(fu.impr||"")}</textarea></label>
       <label>المتحقق من المؤشر<input type="text" id="fu-ach" value="${esc(fu.achieved)}" placeholder="المستهدف: ${esc(p.target||"")}"></label>
       <label>المتابِعة<input type="text" id="fu-fol" value="${esc(fu.follower)}" list="ppl-fu"></label>
       <label class="full">الإجراء التصحيحي المطلوب<textarea id="fu-cor" rows="2">${esc(fu.corrective)}</textarea></label>
@@ -1458,8 +1459,8 @@ function openFollowup(pid){
   modalRoot.querySelectorAll('input[type="date"]').forEach(inp=>{ const hn=Object.assign(document.createElement("span"),{className:"hint"}); const u=()=>hn.textContent=inp.value?hl(inp.value):""; inp.after(hn); inp.addEventListener("input",u); u(); });
   $("#fu-period").value=fu.period; $("#fu-status").value=fu.status||"";
   $("#fu-prog").onchange=e=>openFollowup(e.target.value);
-  $("#fu-auto").onclick=()=>{ $("#fu-done").value=fuDefaults(p).done; };
-  const read=()=>({period:$("#fu-period").value,date:$("#fu-date").value||todayISO,status:$("#fu-status").value,done:$("#fu-done").value.trim(),challenges:$("#fu-ch").value.trim(),achieved:$("#fu-ach").value.trim(),
+  $("#fu-auto").onclick=()=>{ const d=fuDefaults(p); $("#fu-done").value=d.done; $("#fu-ch").value=d.challenges; $("#fu-impr").value=d.impr; };
+  const read=()=>({period:$("#fu-period").value,date:$("#fu-date").value||todayISO,status:$("#fu-status").value,done:$("#fu-done").value.trim(),challenges:$("#fu-ch").value.trim(),impr:$("#fu-impr").value.trim(),achieved:$("#fu-ach").value.trim(),
     corrective:$("#fu-cor").value.trim(),corrResp:$("#fu-cres").value.trim(),corrDue:$("#fu-cdue").value,follower:$("#fu-fol").value.trim(),next:$("#fu-next").value});
   const save=async f=>{ if(!S.db||!canMgr()) return false; try{ await S.db.doc("programs/"+p.id).update({fu:f}); return true; }catch(e){ handleWriteErr(e); return false; } };
   $("#fu-save")?.addEventListener("click",async()=>{ if(await save(read())) toast("حُفظت بيانات المتابعة"); });
