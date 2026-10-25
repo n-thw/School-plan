@@ -194,6 +194,8 @@ h3{margin:0}
 .impr .fi{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--gold);color:#fff;flex:none}
 .impr .fi svg{width:17px;height:17px}
 .impr textarea{background:var(--surface)}
+.impr.chal{border-color:color-mix(in srgb,var(--bad) 45%,transparent);background:color-mix(in srgb,var(--bad-soft) 55%,var(--surface))}
+.impr.chal .fi{background:var(--bad)}
 .facts dd{margin:0;font-weight:500}
 .kpi{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-family:var(--f-display)}
 .kpi .arrow{color:var(--pc)}
@@ -871,6 +873,11 @@ function vPrograms(){
           <div><span class="fi">${ic("award")}</span><div><dt>مؤشر الإنجاز</dt><dd>${esc(p.indicator)}</dd></div></div>
         </dl>
         <div class="prog-acts"><button class="btn sm" type="button" data-form="fu" data-prog="${p.id}">${ic("report")} تقرير المتابعة الدوري</button><button class="btn sm" type="button" data-form="cards" data-prog="${p.id}">${ic("clip")} بطاقات توثيق الشواهد</button></div>
+        <div class="impr chal">
+          <label for="chal-${p.id}"><span class="fi">${ic("alert")}</span>التحديات والصعوبات</label>
+          <textarea id="chal-${p.id}" data-chal="${p.id}" rows="3" placeholder="اكتبي التحديات والصعوبات التي واجهت تنفيذ هذا البرنامج، مثل: ما أعاق التنفيذ، وما تأخر وسببه، وما يحتاج إلى دعم…" ${canP(p)?"":"disabled"}>${esc(p.challenges||"")}</textarea>
+          <span class="tiny">تُحفظ تلقائيًا عند الخروج من الخانة${p.challengesAt?" · آخر تحديث "+hl(p.challengesAt):""}</span>
+        </div>
         <div class="impr">
           <label for="impr-${p.id}"><span class="fi">${ic("bulb")}</span>فرص التحسين والتطوير</label>
           <textarea id="impr-${p.id}" data-impr="${p.id}" rows="3" placeholder="اكتبي فرص التحسين والتطوير المقترحة لهذا البرنامج، مثل: ما يحتاج إلى معالجة، ومقترحات لرفع الأثر، ودروس مستفادة…" ${canP(p)?"":"disabled"}>${esc(p.improvements||"")}</textarea>
@@ -1252,6 +1259,7 @@ function buildReport(o){
   ${progs.map(p=>{ const pt=ts.filter(t=>t.programId===p.id).sort(byDate); const pv=avg(pt.map(pct));
     return `<section><h2>${esc(p.name)} <small>الهدف ${esc(goalTxt(p))} · إنجاز ${n(pv)}٪</small></h2>
     <p class="meta">المسؤولة: ${esc((p.lead||[]).join("، "))} · المساعدات: ${esc((p.assistants||[]).join("، "))} · المؤشر: ${esc(p.baseline)} ← ${esc(p.target)}</p>
+    ${p.challenges?`<div class="impr-r chal-r"><b>التحديات والصعوبات:</b><div style="white-space:pre-line">${esc(p.challenges)}</div></div>`:""}
     ${p.improvements?`<div class="impr-r"><b>فرص التحسين والتطوير:</b><div style="white-space:pre-line">${esc(p.improvements)}</div></div>`:""}
     <table><thead><tr><th>المهمة</th><th>الفترة</th><th>المسؤولة</th><th>الحالة</th><th>الإنجاز</th><th>الملاحظات والرصد</th></tr></thead><tbody>
     ${pt.map(t=>{ const es=effStatus(t); const wn=notesIn(t); return `<tr><td>${esc(t.title)}</td><td class="nw">${h(t.start)} – ${h(t.end)}</td><td>${esc((t.owners||[]).join("، "))}</td><td style="color:${stColor[es]};font-weight:700" class="nw">${stLabel(t)}</td><td>${n(pct(t))}٪</td>
@@ -1265,7 +1273,7 @@ h1{font-family:"Alexandria","Tajawal",sans-serif;font-size:24px;margin:0;color:#
 h2{font-family:"Alexandria","Tajawal",sans-serif;font-size:18px;margin:26px 0 4px;color:#1f7482;border-bottom:2px solid #2781be;padding-bottom:4px}h2 small{font-size:13px;color:#4b6463;font-weight:400}
 .meta{font-size:13px;color:#4b6463;margin:4px 0 8px}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #d5dfdc;padding:6px 8px;text-align:right;vertical-align:top}
-th{background:#123b5a;color:#fff}.evr{font-size:12px;color:#1f7482;margin-top:4px}.impr-r{background:#fbf1dc;border-inline-start:4px solid #d9a13b;border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:13.5px}.nw{white-space:nowrap}ul{margin:4px 0 0;padding-inline-start:16px}
+th{background:#123b5a;color:#fff}.evr{font-size:12px;color:#1f7482;margin-top:4px}.impr-r{background:#fbf1dc;border-inline-start:4px solid #d9a13b;border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:13.5px}.impr-r.chal-r{background:#fae4e1;border-color:#c8463d}.nw{white-space:nowrap}ul{margin:4px 0 0;padding-inline-start:16px}
 table.sum td{text-align:center;background:#eaf3f6;font-size:13px}table.sum b{display:block;font-size:22px;color:#1f7482}`;
 function openReport(){
   const sc=reportScopes();
@@ -1348,7 +1356,7 @@ function fuDefaults(p){
   const evs=progEvidence(p);
   const txt=done.map(t=>{ const codes=evs.filter(x=>x.t.id===t.id).map(x=>evCodeStr(evCode(p,x)));
     return `• ${t.title}${t.status==="done"?"":` (${nn.format(pct(t))}٪)`}${codes.length?` · الشواهد: ${codes.join("، ")}`:""}`; }).join("\n");
-  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.improvements||"",achieved:"",corrective:"",corrResp:(p.lead||[]).join("، "),corrDue:"",follower:S.MODE==="firebase"?(S.role==="follower"&&S.uid?S.uid:(followerName()||S.uid||"")):"",next:""};
+  return {period:"monthly",date:todayISO,status:"",done:txt,challenges:p.challenges||"",achieved:"",corrective:"",corrResp:(p.lead||[]).join("، "),corrDue:"",follower:S.MODE==="firebase"?(S.role==="follower"&&S.uid?S.uid:(followerName()||S.uid||"")):"",next:""};
 }
 
 /* ----- shared page shell ----- */
@@ -1629,6 +1637,9 @@ view.addEventListener("change",e=>{
   else if(t.dataset.progInput){ const v=+t.value; const task=S.tasks.find(x=>x.id===t.dataset.progInput);
     const patch={progress:v}; if(v===100) patch.status="done"; else if(task.status==="done") patch.status="doing"; else if(v>0&&task.status==="todo") patch.status="doing";
     saveTask(task.id,patch); }
+  else if(t.dataset.chal){ const pr=progById(t.dataset.chal); const v=t.value.trim();
+    if(pr && (pr.challenges||"")!==v){ if(!S.db||!canP(pr)){ toast("يمكنك كتابة التحديات لبرامجك فقط"); return; }
+      S.db.doc("programs/"+pr.id).update({challenges:v,challengesAt:todayISO}).then(()=>toast("حُفظت التحديات والصعوبات")).catch(handleWriteErr); } }
   else if(t.dataset.impr){ const pr=progById(t.dataset.impr); const v=t.value.trim();
     if(pr && (pr.improvements||"")!==v){ if(!S.db||!canP(pr)){ toast("يمكنك كتابة فرص التحسين لبرامجك فقط"); return; }
       S.db.doc("programs/"+pr.id).update({improvements:v,improvementsAt:todayISO}).then(()=>toast("حُفظت فرص التحسين")).catch(handleWriteErr); } }
