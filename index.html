@@ -1380,7 +1380,7 @@ const FORM_CSS=`*{box-sizing:border-box}html,body{margin:0;background:#e9eef1}bo
 table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#DDEEF1;color:#123B5A;font-weight:700;padding:5px 6px;border:1px solid #BFD9DE}td{border:1px solid #DFEBEE;padding:5px 6px;vertical-align:middle}tbody tr:nth-child(even) td{background:#F3F8F9}
 .c{text-align:center}.code{color:#2781BE;font-weight:800;white-space:nowrap}.nw{white-space:nowrap}.pill{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11px;padding:2px 9px;border-radius:999px;white-space:nowrap}.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .sig{min-height:52px}.dots{color:#8A9AA5}
-@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0;box-shadow:none;break-after:page;page-break-after:always;height:208mm;max-height:208mm}.page:last-child{break-after:auto;page-break-after:auto}}`;
+@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0 auto;box-shadow:none;break-after:page;page-break-after:always;height:208mm;max-height:208mm;zoom:.92;overflow:hidden}.page:last-child{break-after:auto;page-break-after:auto}}`;
 function formPage({sub,title,body,num}){
   return `<section class="page"><div class="hd"><div class="ann">الملحق ٠١ · متابعة البرامج والتوثيق</div><img src="${MOE_LOGO}" alt="وزارة التعليم"></div>
   <div class="ttl"><div><small>${esc(sub)}</small><h1>${title}</h1></div><div class="ul"></div></div>
@@ -1390,7 +1390,7 @@ function formPage({sub,title,body,num}){
 function formDoc(title,pages){
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"><style>${FORM_CSS}</style></head>
-<body><div class="bar-top">${esc(title)} <button type="button" onclick="window.print()">طباعة / حفظ PDF</button></div>${pages.join("")}</body></html>`;
+<body><div class="bar-top">${esc(title)} <button type="button" onclick="window.print()">طباعة / حفظ PDF</button><small style="opacity:.8;font-size:12px">في نافذة الطباعة اختاري الاتجاه الأفقي، وألغي الترويسة والتذييل إن ظهرت صفحات فارغة</small></div>${pages.join("")}</body></html>`;
 }
 async function saveForm(name,html,msg){
   if(!S.dl){ toast("التنزيل غير متاح هنا"); return; }
