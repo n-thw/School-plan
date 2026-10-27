@@ -381,7 +381,7 @@ a.ev-thumb{text-decoration:none}a.ev-name{color:var(--accent-2);text-decoration:
     <div class="top-row">
       <div class="brand">
         <div class="seal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></div>
-        <div><h1>متابعة تنفيذ الخطة التشغيلية</h1><small id="todayLbl">العام الدراسي ١٤٤٨هـ</small><small class="principal"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg> <span class="pp">مديرة المدرسة: <b>ريم العثيم</b></span><span class="sep" aria-hidden="true"></span><span class="pp">إعداد: <b>لجنة التميز</b></span></small></div>
+        <div><h1>متابعة تنفيذ الخطة التشغيلية</h1><small id="todayLbl">العام الدراسي ١٤٤٨هـ</small><small class="principal"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg> <span class="pp">مديرة المدرسة: <b>ريم بنت عبدالله العثيم</b></span><span class="sep" aria-hidden="true"></span><span class="pp">إعداد: <b>لجنة التميز</b></span></small></div>
       </div>
       <div class="top-tools">
         <button class="btn sm who" id="whoBtn" type="button" hidden aria-label="حسابي"></button>
@@ -705,7 +705,9 @@ const PATCHES=[
     {"id": "p07-n12", "title": "مهارات التفكير الحاسوبي وبيبراس موهبة", "start": "2026-10-05", "end": "2026-10-05", "order": 18},
     {"id": "p07-n13", "title": "ورشة تصميم تطبيقات تفاعلية بالذكاء الاصطناعي", "start": "2026-10-19", "end": "2026-10-19", "order": 19},
     {"id": "p07-n14", "title": "منافسة بيبراس المدرسي", "start": "2026-10-26", "end": "2026-10-26", "order": 20},
-    {"id": "p07-n15", "title": "هاكاثون مصممات المستقبل الرقمي لتصميم تطبيقات بالذكاء الاصطناعي", "start": "2026-10-27", "end": "2026-10-27", "order": 21}]}]}
+    {"id": "p07-n15", "title": "هاكاثون مصممات المستقبل الرقمي لتصميم تطبيقات بالذكاء الاصطناعي", "start": "2026-10-27", "end": "2026-10-27", "order": 21}]}]},
+{id:"p10-indicators-2026-10-27",label:"أتعلم بأمان رقمي: خط الأساس ٥٦٪ والمستهدف ٩٠٪ ومؤشرا الأداء والإنجاز الجديدان",programs:[
+  {programId:"p10",fields:{baseline:"٥٦٪",target:"٩٠٪",kpi:"نسبة الطالبات اللاتي يحققن مستوى «الممارسة الرقمية الآمنة» (٩٠٪ فأكثر) في استبانة الأمان الرقمي والاستخدام المسؤول للذكاء الاصطناعي (قياس قبلي/بعدي)",indicator:"بلوغ ٩٠٪ من الطالبات مستوى «مستوفٍ» في نهاية العام الدراسي"}}]}
 ];
 const pendingPatches=()=>PATCHES.filter(x=>!(S.settings?.patches||[]).includes(x.id));
 function patchBanner(){
@@ -718,7 +720,7 @@ async function applyPatch(id,btn){
     let upd=0,add=0,del=0;
     for(const pp of pt.programs){
       const p=progById(pp.programId);
-      for(const it of pp.tasks){
+      for(const it of (pp.tasks||[])){
         const ex=S.tasks.find(x=>x.id===it.id);
         if(ex){ const mv=ex.programId!==pp.programId; await S.db.doc("tasks/"+it.id).update({title:it.title,start:it.start,end:it.end,order:it.order,...(mv?{programId:pp.programId,owners:p?.lead||[],assistants:p?.assistants||[]}:{})}); upd++; } // نقل المهمة إلى برنامج آخر إن لزم
         else{ await S.db.doc("tasks/"+it.id).set({programId:pp.programId,title:it.title,start:it.start,end:it.end,order:it.order,owners:p?.lead||[],assistants:p?.assistants||[],status:"todo",progress:0,notes:"",deps:[],weekly:{}}); add++; }
@@ -726,9 +728,9 @@ async function applyPatch(id,btn){
       for(const rid of (pp.remove||[])){ const t=S.tasks.find(x=>x.id===rid); if(!t) continue;
         if(evOf(t).length||Object.keys(t.weekly||{}).length||t.progress){ await S.db.doc("tasks/"+rid).update({order:900+(t.order||0)}); } // keep anything already worked on, after the scheduled tasks
         else { await S.db.doc("tasks/"+rid).delete(); del++; } }
-      let k=pp.tasks.length;   // anything else in the program keeps its place after the scheduled tasks
-      for(const t of S.tasks.filter(x=>x.programId===pp.programId&&!pp.tasks.some(i=>i.id===x.id)&&!(pp.remove||[]).includes(x.id)).sort((a,b)=>(a.order||0)-(b.order||0))){ await S.db.doc("tasks/"+t.id).update({order:++k}); }
-      if(pp.start||pp.end) await S.db.doc("programs/"+pp.programId).update({...(pp.start?{start:pp.start}:{}),...(pp.end?{end:pp.end}:{})});
+      let k=(pp.tasks||[]).length;   // anything else in the program keeps its place after the scheduled tasks
+      if(pp.tasks) for(const t of S.tasks.filter(x=>x.programId===pp.programId&&!pp.tasks.some(i=>i.id===x.id)&&!(pp.remove||[]).includes(x.id)).sort((a,b)=>(a.order||0)-(b.order||0))){ await S.db.doc("tasks/"+t.id).update({order:++k}); }
+      if(pp.start||pp.end||pp.fields) await S.db.doc("programs/"+pp.programId).update({...(pp.fields||{}),...(pp.start?{start:pp.start}:{}),...(pp.end?{end:pp.end}:{})});
     }
     await S.db.doc("settings/main").update({patches:[...(S.settings?.patches||[]),id]});
     toast(`تم التحديث: ${n(upd)} مهمة عُدّلت و${n(add)} أُضيفت${del?` و${n(del)} حُذفت`:""}`);
@@ -870,6 +872,7 @@ function vPrograms(){
           <div><span class="fi">${ic("user")}</span><div><dt>المسؤولة الرئيسة</dt><dd>${esc((p.lead||[]).join("، "))}${p.leadRole?` <span class="tiny">(${esc(p.leadRole)})</span>`:""}</dd></div></div>
           <div><span class="fi">${ic("users")}</span><div><dt>المساعدات</dt><dd>${esc((p.assistants||[]).join("، "))}</dd></div></div>
           <div><span class="fi">${ic("coins")}</span><div><dt>التكلفة</dt><dd>${n(p.cost||0)} ريال</dd></div></div>
+          ${p.kpi?`<div><span class="fi">${ic("pie")}</span><div><dt>مؤشر الأداء</dt><dd>${esc(p.kpi)}</dd></div></div>`:""}
           <div><span class="fi">${ic("award")}</span><div><dt>مؤشر الإنجاز</dt><dd>${esc(p.indicator)}</dd></div></div>
         </dl>
         <div class="prog-acts"><button class="btn sm" type="button" data-form="fu" data-prog="${p.id}">${ic("report")} تقرير المتابعة الدوري</button><button class="btn sm" type="button" data-form="cards" data-prog="${p.id}">${ic("clip")} بطاقات توثيق الشواهد</button></div>
@@ -1254,7 +1257,7 @@ function buildReport(o){
   const stColor={done:"#2e8b57",doing:"#d1861a",todo:"#5e707c",late:"#c8463d",blocked:"#c8463d"};
   const body=`
   <h1>${title}</h1>
-  <p class="sub">${esc(filters)} — أُعدّ في ${hl(todayISO)}<br>إعداد: <b>لجنة التميز</b> · مديرة المدرسة: <b>ريم العثيم</b></p>
+  <p class="sub">${esc(filters)} — أُعدّ في ${hl(todayISO)}<br>إعداد: <b>لجنة التميز</b> · مديرة المدرسة: <b>ريم بنت عبدالله العثيم</b></p>
   <table class="sum"><tr><td><b>${n(overall)}٪</b>نسبة الإنجاز</td><td><b>${n(ts.length)}</b>مهمة</td><td><b>${n(cnt.done)}</b>منجزة</td><td><b>${n(cnt.doing)}</b>قيد التنفيذ</td><td><b>${n(cnt.late+cnt.blocked)}</b>متأخرة/متعثرة</td><td><b>${n(cnt.todo)}</b>لم تبدأ</td></tr></table>
   ${progs.map(p=>{ const pt=ts.filter(t=>t.programId===p.id).sort(byDate); const pv=avg(pt.map(pct));
     return `<section><h2>${esc(p.name)} <small>الهدف ${esc(goalTxt(p))} · إنجاز ${n(pv)}٪</small></h2>
@@ -1265,7 +1268,7 @@ function buildReport(o){
     ${pt.map(t=>{ const es=effStatus(t); const wn=notesIn(t); return `<tr><td>${esc(t.title)}</td><td class="nw">${h(t.start)} – ${h(t.end)}</td><td>${esc((t.owners||[]).join("، "))}</td><td style="color:${stColor[es]};font-weight:700" class="nw">${stLabel(t)}</td><td>${n(pct(t))}٪</td>
       <td>${esc(t.notes||"")}${evOf(t).length?`<div class="evr">الشواهد (${n(evOf(t).length)}): ${evOf(t).map(e=>esc(e.name)).join("، ")}</div>`:""}${wn.length?`<ul>${wn.map(([k,m])=>`<li>${hdm(k)}: ${m.s?WK[m.s]:""}${m.n?" — "+esc(m.n):""}</li>`).join("")}</ul>`:""}</td></tr>`; }).join("")}
     </tbody></table></section>`; }).join("") || "<p>لا توجد مهام مطابقة لخيارات التقرير.</p>"}
-  <div class="sign" style="margin-top:36px;display:flex;justify-content:flex-start"><div style="text-align:center;min-width:220px"><div>مديرة المدرسة</div><div style="font-weight:700;margin-top:4px">ريم العثيم</div><div style="margin-top:28px;border-top:1px dotted currentColor;padding-top:4px;font-size:12px;opacity:.7">التوقيع</div></div></div>`;
+  <div class="sign" style="margin-top:36px;display:flex;justify-content:flex-start"><div style="text-align:center;min-width:220px"><div>مديرة المدرسة</div><div style="font-weight:700;margin-top:4px">ريم بنت عبدالله العثيم</div><div style="margin-top:28px;border-top:1px dotted currentColor;padding-top:4px;font-size:12px;opacity:.7">التوقيع</div></div></div>`;
   return {body, ts, sc, filters};
 }
 const REPORT_CSS=`body{font-family:"Tajawal",Tahoma,Arial,sans-serif;direction:rtl;color:#0f2a2b;margin:32px;line-height:1.6}
@@ -1376,7 +1379,7 @@ const FORM_CSS=`*{box-sizing:border-box}html,body{margin:0;background:#e9eef1}bo
 table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#DDEEF1;color:#123B5A;font-weight:700;padding:5px 6px;border:1px solid #BFD9DE}td{border:1px solid #DFEBEE;padding:5px 6px;vertical-align:middle}tbody tr:nth-child(even) td{background:#F3F8F9}
 .c{text-align:center}.code{color:#2781BE;font-weight:800;white-space:nowrap}.nw{white-space:nowrap}.pill{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11px;padding:2px 9px;border-radius:999px;white-space:nowrap}.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .sig{min-height:52px}.dots{color:#8A9AA5}
-@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0;box-shadow:none;break-after:page}.page:last-child{break-after:auto}}`;
+@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0;box-shadow:none;break-after:page;page-break-after:always;height:208mm;max-height:208mm}.page:last-child{break-after:auto;page-break-after:auto}}`;
 function formPage({sub,title,body,num}){
   return `<section class="page"><div class="hd"><div class="ann">الملحق ٠١ · متابعة البرامج والتوثيق</div><img src="${MOE_LOGO}" alt="وزارة التعليم"></div>
   <div class="ttl"><div><small>${esc(sub)}</small><h1>${title}</h1></div><div class="ul"></div></div>
@@ -1418,7 +1421,7 @@ function fuPage(p,fu){
   </div>
   <div class="g" style="grid-template-columns:1fr 1fr">
     <table><thead><tr><th>مؤشر البرنامج</th><th>المستهدف</th><th>المتحقق</th><th>الفرق</th></tr></thead><tbody>
-      <tr><td style="font-size:10.5px">${esc(p.indicator||"")}</td><td class="c nw">${esc(p.target||"")}</td><td class="c nw">${esc(fu.achieved||"")}</td><td class="c nw" style="font-weight:700;color:${diff===null?"inherit":diff>=0?"#2E8B57":"#B03A48"}"><bdi dir="ltr">${diffS}</bdi></td></tr>
+      <tr><td style="font-size:10.5px">${esc(p.kpi||p.indicator||"")}</td><td class="c nw">${esc(p.target||"")}</td><td class="c nw">${esc(fu.achieved||"")}</td><td class="c nw" style="font-weight:700;color:${diff===null?"inherit":diff>=0?"#2E8B57":"#B03A48"}"><bdi dir="ltr">${diffS}</bdi></td></tr>
       <tr><td>خط الأساس</td><td class="c nw" colspan="3">${esc(p.baseline||"")}</td></tr></tbody></table>
     <div class="box"><span class="l">الإجراء التصحيحي المطلوب</span><div class="v" style="white-space:pre-line">${esc(fu.corrective||"")}</div></div>
   </div>
@@ -1426,7 +1429,7 @@ function fuPage(p,fu){
     <div class="box sig"><span class="l">المتابِعة (الاسم والتوقيع)</span><div class="v">${esc(fu.follower||"")}</div></div>
     <div class="box sig"><span class="l">موعد المتابعة القادمة</span><div class="v">${fu.next?hy(fu.next):""}</div></div>
     <div class="box sig"><span class="l">اعتماد رئيسة فريق المتابعة</span></div>
-    <div class="box sig"><span class="l">اطلاع مديرة المدرسة</span><div class="v">ريم العثيم</div></div>
+    <div class="box sig"><span class="l">اطلاع مديرة المدرسة</span><div class="v">ريم بنت عبدالله العثيم</div></div>
   </div>`});
 }
 function openFollowup(pid){
@@ -1546,11 +1549,11 @@ function glossaryPages(){
   for(let i=0;i<rows.length||i===0;i+=per){
     const part=rows.slice(i,i+per);
     pages.push(formPage({sub:"تُجمع فيه شواهد البرامج وتقوَّمها لجنة التقويم",title:"نموذج (٣): المسرد · خلاصة برامج مؤشرات الخطة ١٤٤٨هـ",num:pages.length?`صفحة ${nn.format(pages.length+1)}`:"",body:`
-    <table><thead><tr><th rowspan="2">اسم البرنامج</th><th rowspan="2">رقم<br>الهدف العام</th><th rowspan="2">رقم<br>الهدف التفصيلي</th><th rowspan="2">رقم مؤشر<br>الإنجاز</th><th rowspan="2">رقم الشاهد</th><th rowspan="2" style="width:22%">وصف الشاهد</th><th colspan="4">مستوى الإنجاز (تقويم اللجنة)</th><th rowspan="2">الدرجة</th><th rowspan="2" style="width:14%">سبب التصنيف</th></tr>
+    <table><thead><tr><th rowspan="2">اسم البرنامج</th><th rowspan="2">رقم<br>الهدف العام</th><th rowspan="2">رقم<br>الهدف التفصيلي</th><th rowspan="2">رقم مؤشر<br>الإنجاز</th><th rowspan="2">رقم الشاهد</th><th rowspan="2" style="width:18%">وصف الشاهد</th><th colspan="4">مستوى الإنجاز (تقويم اللجنة)</th><th rowspan="2">الدرجة</th><th rowspan="2" style="width:12%">سبب التصنيف</th><th rowspan="2" style="width:14%">التحديات والصعوبات</th></tr>
       <tr>${RATES.map(([,l])=>`<th style="font-weight:500">${l}</th>`).join("")}</tr></thead>
-    <tbody>${part.map(({p,g,x})=>{ const c=x?evCode(p,x):null; const r=x?.e.rate??"";
+    <tbody>${part.map(({p,g,x},ri)=>{ const c=x?evCode(p,x):null; const r=x?.e.rate??""; const first=ri===0||part[ri-1].p!==p; const span=first?part.slice(ri).findIndex(y=>y.p!==p):0; const chalCell=first?`<td rowspan="${span<0?part.length-ri:span}" style="font-size:10px;white-space:pre-line;vertical-align:top">${esc(p.challenges||"")}</td>`:"";
       return `<tr><td style="font-weight:700">${esc(p.name)}</td><td class="c">${esc(g.gen)}</td><td class="c code">${esc(g.full)}</td><td class="c">${c?c.ind:""}</td><td class="c code">${c?esc(evCodeStr(c)):""}</td><td style="font-size:10.5px">${x?esc(x.e.desc||x.t.title):""}</td>
-        ${RATES.map(([k])=>`<td class="c" style="color:#2E8B57;font-weight:800">${r!==""&&r===k?"✓":""}</td>`).join("")}<td class="c" style="font-weight:800">${r!==""?nn.format(+r):""}</td><td style="font-size:10.5px">${x?esc(x.e.rateWhy||""):""}</td></tr>`; }).join("")}</tbody></table>
+        ${RATES.map(([k])=>`<td class="c" style="color:#2E8B57;font-weight:800">${r!==""&&r===k?"✓":""}</td>`).join("")}<td class="c" style="font-weight:800">${r!==""?nn.format(+r):""}</td><td style="font-size:10.5px">${x?esc(x.e.rateWhy||""):""}</td>${chalCell}</tr>`; }).join("")}</tbody></table>
     <div style="margin-top:auto;display:flex;gap:30px;font-size:12px;color:#5E707C;padding-bottom:6px"><span>سلّم التقدير المقترح: عالٍ = ٣ · متوسط = ٢ · قليل = ١ · غير متوفر = ٠</span><span>رئيسة لجنة التقويم: ……………………</span><span>التوقيع: ……………</span></div>`}));
     if(!rows.length) break;
   }
@@ -1563,10 +1566,10 @@ function logPages(){
   const per=10, pages=[], ps=S.programs;
   for(let i=0;i<ps.length;i+=per){
     pages.push(formPage({sub:"تُحدّثه مسؤولة كل برنامج أسبوعيًا ويراجعه فريق المتابعة شهريًا",title:"سجل متابعة برامج الخطة التشغيلية ١٤٤٨هـ",num:pages.length?`صفحة ${nn.format(pages.length+1)}`:"",body:`
-    <table><thead><tr><th>الرمز</th><th>البرنامج</th><th>مسؤولة التنفيذ</th><th>من</th><th>إلى</th><th>خط الأساس ← المستهدف</th><th>الإنجاز</th><th>حالة التنفيذ</th><th>رقم الشاهد</th><th style="width:20%">فرص التحسين والإجراء التصحيحي</th></tr></thead>
+    <table><thead><tr><th>الرمز</th><th>البرنامج</th><th>مسؤولة التنفيذ</th><th>من</th><th>إلى</th><th>خط الأساس ← المستهدف</th><th>الإنجاز</th><th>حالة التنفيذ</th><th>رقم الشاهد</th><th style="width:20%">التحديات وفرص التحسين والإجراء التصحيحي</th></tr></thead>
     <tbody>${ps.slice(i,i+per).map(p=>{ const st=(p.fu?.status)||progStatus(p); const evs=progEvidence(p).map(x=>evCodeStr(evCode(p,x)));
       const evS=evs.length>3?`${evs[0]} – ${evs[evs.length-1]} (${nn.format(evs.length)})`:evs.join("، ");
-      const impr=[p.improvements,p.fu?.corrective].filter(Boolean).join(" · ");
+      const impr=[p.challenges?"التحديات: "+p.challenges:"",p.improvements?"فرص التحسين: "+p.improvements:"",p.fu?.corrective?"الإجراء التصحيحي: "+p.fu.corrective:""].filter(Boolean).join(" · ");
       return `<tr><td class="c code">${esc(goalOf(p).full)}</td><td style="font-weight:700">${esc(p.name)}</td><td style="font-size:10.5px">${esc((p.lead||[]).join(" و"))}</td><td class="c nw">${hy(p.start)}</td><td class="c nw">${hy(p.end)}</td>
         <td class="c nw" style="color:#1F7482;font-weight:700">${esc(p.baseline||"")} ← ${esc(p.target||"")}</td><td class="c">${nn.format(progPct(p))}٪</td><td class="c"><span class="pill" style="color:${PST_C[st]};background:${PST_C[st]}1a">${PST[st]}</span></td><td class="c" style="font-size:10px;color:#2781BE">${esc(evS)}</td><td style="font-size:10px">${esc(impr.length>160?impr.slice(0,157)+"…":impr)}</td></tr>`; }).join("")}</tbody></table>
     <div style="margin-top:auto;display:flex;gap:8px;align-items:center;font-size:12px;padding-bottom:6px;color:#5E707C"><b>مفتاح الحالة:</b>${Object.entries(PST).map(([k,l])=>`<span class="pill" style="color:${PST_C[k]};background:${PST_C[k]}1a">${l}</span>`).join("")}</div>`}));
