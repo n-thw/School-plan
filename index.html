@@ -1550,11 +1550,11 @@ function glossaryPages(){
   for(let i=0;i<rows.length||i===0;i+=per){
     const part=rows.slice(i,i+per);
     pages.push(formPage({sub:"تُجمع فيه شواهد البرامج وتقوَّمها لجنة التقويم",title:"نموذج (٣): المسرد · خلاصة برامج مؤشرات الخطة ١٤٤٨هـ",num:pages.length?`صفحة ${nn.format(pages.length+1)}`:"",body:`
-    <table><thead><tr><th rowspan="2">اسم البرنامج</th><th rowspan="2">رقم<br>الهدف العام</th><th rowspan="2">رقم<br>الهدف التفصيلي</th><th rowspan="2">رقم مؤشر<br>الإنجاز</th><th rowspan="2">رقم الشاهد</th><th rowspan="2" style="width:18%">وصف الشاهد</th><th colspan="4">مستوى الإنجاز (تقويم اللجنة)</th><th rowspan="2">الدرجة</th><th rowspan="2" style="width:12%">سبب التصنيف</th><th rowspan="2" style="width:14%">التحديات والصعوبات</th></tr>
+    <table><thead><tr><th rowspan="2">اسم البرنامج</th><th rowspan="2">رقم<br>الهدف العام</th><th rowspan="2">رقم<br>الهدف التفصيلي</th><th rowspan="2">رقم مؤشر<br>الإنجاز</th><th rowspan="2">رقم الشاهد</th><th rowspan="2" style="width:22%">وصف الشاهد</th><th colspan="4">مستوى الإنجاز (تقويم اللجنة)</th><th rowspan="2">الدرجة</th><th rowspan="2" style="width:18%">التحديات والصعوبات</th></tr>
       <tr>${RATES.map(([,l])=>`<th style="font-weight:500">${l}</th>`).join("")}</tr></thead>
     <tbody>${part.map(({p,g,x},ri)=>{ const c=x?evCode(p,x):null; const r=x?.e.rate??""; const first=ri===0||part[ri-1].p!==p; const span=first?part.slice(ri).findIndex(y=>y.p!==p):0; const chalCell=first?`<td rowspan="${span<0?part.length-ri:span}" style="font-size:10px;white-space:pre-line;vertical-align:top">${esc(p.challenges||"")}</td>`:"";
       return `<tr><td style="font-weight:700">${esc(p.name)}</td><td class="c">${esc(g.gen)}</td><td class="c code">${esc(g.full)}</td><td class="c">${c?c.ind:""}</td><td class="c code">${c?esc(evCodeStr(c)):""}</td><td style="font-size:10.5px">${x?esc(x.e.desc||x.t.title):""}</td>
-        ${RATES.map(([k])=>`<td class="c" style="color:#2E8B57;font-weight:800">${r!==""&&r===k?"✓":""}</td>`).join("")}<td class="c" style="font-weight:800">${r!==""?nn.format(+r):""}</td><td style="font-size:10.5px">${x?esc(x.e.rateWhy||""):""}</td>${chalCell}</tr>`; }).join("")}</tbody></table>
+        ${RATES.map(([k])=>`<td class="c" style="color:#2E8B57;font-weight:800">${r!==""&&r===k?"✓":""}</td>`).join("")}<td class="c" style="font-weight:800">${r!==""?nn.format(+r):""}</td>${chalCell}</tr>`; }).join("")}</tbody></table>
     <div style="margin-top:auto;display:flex;gap:30px;font-size:12px;color:#5E707C;padding-bottom:6px"><span>سلّم التقدير المقترح: عالٍ = ٣ · متوسط = ٢ · قليل = ١ · غير متوفر = ٠</span><span>رئيسة لجنة التقويم: ……………………</span><span>التوقيع: ……………</span></div>`}));
     if(!rows.length) break;
   }
