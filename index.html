@@ -1380,17 +1380,26 @@ const FORM_CSS=`*{box-sizing:border-box}html,body{margin:0;background:#e9eef1}bo
 table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#DDEEF1;color:#123B5A;font-weight:700;padding:5px 6px;border:1px solid #BFD9DE}td{border:1px solid #DFEBEE;padding:5px 6px;vertical-align:middle}tbody tr:nth-child(even) td{background:#F3F8F9}
 .c{text-align:center}.code{color:#2781BE;font-weight:800;white-space:nowrap}.nw{white-space:nowrap}.pill{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11px;padding:2px 9px;border-radius:999px;white-space:nowrap}.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .sig{min-height:52px}.dots{color:#8A9AA5}
-@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0 auto;box-shadow:none;break-after:page;page-break-after:always;height:208mm;max-height:208mm;zoom:.92;overflow:hidden}.page:last-child{break-after:auto;page-break-after:auto}}`;
+@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff}.bar-top{display:none}.page{margin:0 auto;box-shadow:none;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid;zoom:.87;overflow:hidden}.page:last-child{break-after:auto;page-break-after:auto}}@media print and (orientation:portrait){.page{zoom:.6}}`;
 function formPage({sub,title,body,num}){
   return `<section class="page"><div class="hd"><div class="ann">الملحق ٠١ · متابعة البرامج والتوثيق</div><img src="${MOE_LOGO}" alt="وزارة التعليم"></div>
   <div class="ttl"><div><small>${esc(sub)}</small><h1>${title}</h1></div><div class="ul"></div></div>
   <div style="flex:1;min-height:0;display:flex;flex-direction:column">${body}</div>
   <div class="ft"><b>${SCHOOL}</b><span>إعداد: لجنة التميز · الخطة التشغيلية للعام الدراسي ١٤٤٨هـ${num?` · ${num}`:""}</span></div></section>`;
 }
+// يُدرج داخل النماذج المصدَّرة: يحوّل كل صفحة إلى صورة ويجمعها في ملف PDF أفقي (بديل عن نافذة الطباعة التي تقصّ الصفحات في سفاري)
+const PDF_JS_SNIPPET=`const ld=u=>new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=u; s.onload=ok; s.onerror=()=>no(new Error(u)); document.head.appendChild(s); });
+async function savePdf(){ const b=document.getElementById("pdfBtn"); if(b.disabled) return; const t0=b.textContent; b.disabled=true;
+  try{ b.textContent="جارٍ التحميل…"; await ld("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"); await ld("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"); if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    const pages=[...document.querySelectorAll(".page")]; const pdf=new jspdf.jsPDF({orientation:"landscape",unit:"mm",format:"a4",compress:true});
+    for(let i=0;i<pages.length;i++){ b.textContent="جارٍ تجهيز الصفحة "+(i+1)+" من "+pages.length+"…"; const cv=await html2canvas(pages[i],{scale:2,useCORS:true,backgroundColor:"#ffffff",logging:false,scrollX:0,scrollY:-window.scrollY}); if(i) pdf.addPage("a4","landscape"); pdf.addImage(cv.toDataURL("image/jpeg",.9),"JPEG",0,0,297,210,undefined,"FAST"); }
+    pdf.save(document.title.replace(/[\\\\/:*?"<>|]+/g,"-")+".pdf"); b.textContent="تم تنزيل PDF ✓"; setTimeout(()=>{ b.textContent=t0; b.disabled=false; },2500);
+  }catch(e){ console.error(e); b.textContent=t0; b.disabled=false; alert("تعذّر إنشاء ملف PDF مباشرة (تحققي من الاتصال بالإنترنت). يمكنك استخدام زر الطباعة ثم حفظه PDF."); } }`;
 function formDoc(title,pages){
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"><style>${FORM_CSS}</style></head>
-<body><div class="bar-top">${esc(title)} <button type="button" onclick="window.print()">طباعة / حفظ PDF</button><small style="opacity:.8;font-size:12px">في نافذة الطباعة اختاري الاتجاه الأفقي، وألغي الترويسة والتذييل إن ظهرت صفحات فارغة</small></div>${pages.join("")}</body></html>`;
+<body><div class="bar-top">${esc(title)} <button type="button" id="pdfBtn" onclick="savePdf()">تنزيل PDF</button><button type="button" onclick="window.print()" style="background:transparent;border:1.5px solid rgba(255,255,255,.6)">طباعة</button><small style="opacity:.8;font-size:12px">زر «تنزيل PDF» يحفظ الملف مباشرة بصفحات كاملة؛ وعند الطباعة اختاري الاتجاه الأفقي</small></div>${pages.join("")}
+<script>${PDF_JS_SNIPPET}<\/script></body></html>`;
 }
 async function saveForm(name,html,msg){
   if(!S.dl){ toast("التنزيل غير متاح هنا"); return; }
@@ -1496,11 +1505,21 @@ async function evPreview(e){
     return await pdfPreview(await evBlob(e));
   }catch(err){ console.warn("evPreview",e.id,err); return {err:err?.code==="not_found"?"ملف الشاهد غير موجود في قاعدة البيانات (ربما تعطّل رفعه)":"تعذّر تجهيز معاينة الملف"}; }
 }
-function cardPage(p,x,pv){
-  const e=x.e, c=evCode(p,x);
-  const cap=pv?.pages?`الصفحة الأولى من ملف PDF${pv.pages>1?` · ${pv.pages} صفحات`:""}${e.name?` · <span style="direction:ltr;unicode-bidi:embed">${esc(e.name)}</span>`:""}`:"";
-  const slot=pv?.img?`<div style="position:relative;width:100%;height:100%"><img src="${pv.img}" alt="" style="position:absolute;top:0;left:0;width:100%;height:${cap?"calc(100% - 18px)":"100%"};object-fit:contain;border-radius:6px">${cap?`<small style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10.5px;color:#5E707C">${cap}</small>`:""}</div>`
-    :`<div style="text-align:center;color:#8A9AA5"><div style="font-size:34px">${e.link?"🔗":(evFileKind(e)==="pdf"?"📄":"🖼️")}</div><b style="display:block;color:#5E707C;font-size:15px;margin:4px 0">${e.link?"شاهد على رابط":evFileKind(e)==="pdf"?"ملف PDF مرفق":"موضع الشاهد"}</b><div style="font-size:11.5px;direction:ltr;word-break:break-all">${esc(e.link||e.name||"")}</div>${pv?.err?`<div style="font-size:11px;color:#B03A48;margin-top:4px">${esc(pv.err)}</div>`:""}</div>`;
+// بلاطة شاهد واحد داخل موضع الشاهد (صورة، أو الصفحة الأولى من PDF، أو رابط)
+function cardTile(e,pv,many){
+  const fs=many?10:10.5;
+  const cap=pv?.pages?`الصفحة الأولى من ملف PDF${pv.pages>1?` · ${pv.pages} صفحات`:""}${e.name?` · <span style="direction:ltr;unicode-bidi:embed">${esc(e.name)}</span>`:""}`:(many&&e.name?`<span style="direction:ltr;unicode-bidi:embed">${esc(e.name)}</span>`:"");
+  if(pv?.img) return `<div style="display:flex;flex-direction:column;width:100%;height:100%;min-height:0"><div role="img" style="flex:1;min-height:0;background:url(${pv.img}) center/contain no-repeat;border-radius:6px"></div>${cap?`<small style="flex:none;height:${fs+6}px;line-height:${fs+6}px;text-align:center;font-size:${fs}px;color:#5E707C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cap}</small>`:""}</div>`;
+  return `<div style="display:grid;place-items:center;width:100%;height:100%;min-height:0"><div style="text-align:center;color:#8A9AA5"><div style="font-size:${many?26:34}px">${e.link?"🔗":(evFileKind(e)==="pdf"?"📄":"🖼️")}</div><b style="display:block;color:#5E707C;font-size:${many?12.5:15}px;margin:4px 0">${e.link?"شاهد على رابط":evFileKind(e)==="pdf"?"ملف PDF مرفق":"موضع الشاهد"}</b><div style="font-size:${many?10.5:11.5}px;direction:ltr;word-break:break-all">${esc(e.link||e.name||"")}</div>${pv?.err?`<div style="font-size:11px;color:#B03A48;margin-top:4px">${esc(pv.err)}</div>`:""}</div></div>`;
+}
+// شواهد المهمة الواحدة تُجمع في بطاقة واحدة (طلب نورة ٢٠٢٦-١٠-٢٧)
+function cardGroups(list){ const m=new Map(); for(const x of list){ const k=x.t.id; if(!m.has(k)) m.set(k,{t:x.t,items:[]}); m.get(k).items.push(x); } return [...m.values()]; }
+function cardPage(p,g,pvs){
+  const items=g.items, x=items[0], e=x.e, c=evCode(p,x);
+  if(items.length>1){ const c2=evCode(p,items[items.length-1]); c.seq=`${c.seq} – ${c2.seq}`; }
+  const first=k=>items.map(i=>i.e[k]).find(v=>v)||"";
+  const n_=items.length, cols=n_<=2?1:n_<=6?2:3, rows=Math.ceil(n_/cols);
+  const slot=n_===1?cardTile(e,pvs[0],false):`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);gap:6px;width:100%;height:100%;min-height:0">${items.map((it,i)=>`<div style="position:relative;min-height:0;min-width:0;border:1px solid #DFEBEE;border-radius:7px;background:#fff;padding:3px">${cardTile(it.e,pvs[i],true)}</div>`).join("")}</div>`;
   const nb=(v,l)=>`<div style="text-align:center"><div style="border:1px solid #9CC4E4;border-radius:7px;background:#fff;height:30px;min-width:66px;display:grid;place-items:center;font-weight:800;color:#2781BE;font-size:15px">${esc(v)}</div><div style="font-size:10px;color:#5E707C;margin-top:3px">${l}</div></div>`;
   return formPage({sub:"تُرفق مع كل شاهد",title:"نموذج (٢): بطاقة توثيق شاهد",body:`
   <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;flex:1;min-height:0;margin-bottom:8px">
@@ -1509,12 +1528,12 @@ function cardPage(p,x,pv){
       <div class="box"><span class="l">الهدف العام</span><div class="v" style="font-size:11.5px">${esc(p.strategic||"")}</div></div>
       <div class="box"><span class="l">الهدف التفصيلي</span><div class="v" style="font-size:11.5px">${esc(p.operational||"")}</div></div>
       <div class="box"><span class="l">مؤشر الإنجاز</span><div class="v" style="font-size:11.5px">${esc(p.indicator||"")}</div></div>
-      <div class="box" style="flex:1;overflow:hidden"><span class="l">وصف الشاهد</span><div class="v">${esc(e.desc||x.t.title)}</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="box"><span class="l">تاريخ التنفيذ</span><div class="v">${hy(e.date||e.at)}</div></div><div class="box"><span class="l">الفئة المستفيدة وعددها</span><div class="v" style="font-size:11.5px">${esc(e.benef||p.audience||"")}</div></div></div>
+      <div class="box" style="flex:1;overflow:hidden"><span class="l">وصف الشاهد</span><div class="v">${esc(first("desc")||x.t.title)}${n_>1?`<div style="font-size:10.5px;color:#5E707C;margin-top:3px">${n(n_)} شواهد لهذه المهمة</div>`:""}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="box"><span class="l">تاريخ التنفيذ</span><div class="v">${hy(first("date")||e.at)}</div></div><div class="box"><span class="l">الفئة المستفيدة وعددها</span><div class="v" style="font-size:11.5px">${esc(first("benef")||p.audience||"")}</div></div></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;min-height:0">
       <div class="box" style="background:#EEF5FB;border-color:#9CC4E4"><span class="l" style="color:#123B5A">رقم الشاهد</span><div style="display:flex;justify-content:center;gap:8px;align-items:flex-start">${nb(c.gen,"الهدف العام")}<b style="color:#9CC4E4;margin-top:6px">/</b>${nb(c.det,"الهدف التفصيلي")}<b style="color:#9CC4E4;margin-top:6px">/</b>${nb(c.ind,"مؤشر الإنجاز")}<b style="color:#9CC4E4;margin-top:6px">/</b>${nb(c.seq,"الشاهد")}</div></div>
-      <div style="flex:1;min-height:0;border:1.5px dashed #BFD9DE;border-radius:9px;background:#F6F9FA;display:grid;place-items:center;padding:8px;overflow:hidden">${slot}</div>
+      <div style="flex:1;min-height:0;border:1.5px dashed #BFD9DE;border-radius:9px;background:#F6F9FA;display:grid;place-items:stretch;padding:8px;overflow:hidden">${slot}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="box sig" style="min-height:44px"><span class="l">مسؤولة البرنامج (الاسم والتوقيع)</span><div class="v" style="font-size:11.5px">${esc((p.lead||[]).join("، "))}</div></div><div class="box sig" style="min-height:44px"><span class="l">اعتماد رئيسة فريق المتابعة</span></div></div>
     </div>
   </div>`});
@@ -1522,8 +1541,9 @@ function cardPage(p,x,pv){
 async function exportCards(p,list){
   if(!list.length){ toast("لا توجد شواهد لهذا البرنامج بعد"); return; }
   toast("جارٍ تجهيز بطاقات التوثيق…");
-  const pages=[]; for(const x of list) pages.push(cardPage(p,x,await evPreview(x.e)));
-  await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/ \/ /g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages),`نُزّل ملف بطاقات «${p.name}» (${n(pages.length)} بطاقة)، افتحيه واطبعيه أو احفظيه PDF`);
+  const groups=cardGroups(list), pages=[];
+  for(const g of groups){ const pvs=[]; for(const it of g.items) pvs.push(await evPreview(it.e)); pages.push(cardPage(p,g,pvs)); }
+  await saveForm(groups.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/ \/ /g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages),`نُزّل ملف بطاقات «${p.name}» (${n(pages.length)} بطاقة، كل مهمة ببطاقة تجمع شواهدها)، افتحيه واطبعيه أو احفظيه PDF`);
 }
 function openEvDoc(taskId,evId,back){
   const t=S.tasks.find(x=>x.id===taskId); const p=progById(t?.programId); if(!t||!p) return;
@@ -1550,7 +1570,7 @@ function openEvDoc(taskId,evId,back){
   const goBack=()=>{ if(back==="editor") openEditor(taskId); else closeModal(); };
   $("#ed-back").onclick=goBack;
   $("#ed-sv")?.addEventListener("click",async()=>{ if(await save()){ toast("حُفظ توثيق الشاهد"); goBack(); } });
-  $("#ed-go").onclick=async()=>{ if(!(await save())) return; const pp=progById(t.programId); const xx=progEvidence(pp).find(y=>y.e.id===evId)||{...x,e:{...e,...read()}}; await exportCards(pp,[xx]); };
+  $("#ed-go").onclick=async()=>{ if(!(await save())) return; const pp=progById(t.programId); const all=progEvidence(pp).filter(y=>y.t.id===t.id); await exportCards(pp,all.length?all:[{...x,e:{...e,...read()}}]); };
 }
 
 /* ----- (٣) المسرد ----- */
@@ -1594,7 +1614,7 @@ async function exportLog(){ await saveForm("سجل-متابعة-برامج-ال�
 function formsHub(){
   return `<div class="forms-hub"><h3>${ic("award")} النماذج الرسمية · الملحق ٠١</h3><div class="fh-grid">
     <button type="button" class="fh" data-form="fu">${ic("report")}<b>تقرير المتابعة الدوري</b><span>نموذج لكل برنامج، شهري أو فصلي</span></button>
-    <button type="button" class="fh" data-form="cards">${ic("clip")}<b>بطاقات توثيق الشواهد</b><span>بطاقة لكل شاهد مع صورته</span></button>
+    <button type="button" class="fh" data-form="cards">${ic("clip")}<b>بطاقات توثيق الشواهد</b><span>بطاقة لكل مهمة تجمع شواهدها في صفحة واحدة</span></button>
     <button type="button" class="fh" data-form="gloss">${ic("list")}<b>المسرد</b><span>خلاصة الشواهد وتقويم اللجنة</span></button>
     <button type="button" class="fh" data-form="log">${ic("gantt")}<b>سجل متابعة البرامج</b><span>كل البرامج في جدول واحد</span></button>
   </div><div id="fh-pick" class="fh-pick" hidden><label for="fh-prog">البرنامج<select id="fh-prog">${S.programs.map(p=>`<option value="${p.id}">${esc(p.name)} (${n(progEvidence(p).length)} شاهد)</option>`).join("")}</select></label><button type="button" class="btn primary sm" id="fh-cards">${ICON.dl} تصدير البطاقات</button></div></div>`;
