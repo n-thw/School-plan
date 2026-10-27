@@ -1434,7 +1434,8 @@ function fuPage(p,fu){
 }
 function openFollowup(pid){
   const p=progById(pid)||S.programs[0]; if(!p) return;
-  const fu={...fuDefaults(p),...(p.fu||{})}; if(!fu.done) fu.done=fuDefaults(p).done; const ro=!canMgr();
+  const d0=fuDefaults(p); const fu={...d0,...(p.fu||{})}; for(const k of ["done","challenges","impr"]) if(!fu[k]) fu[k]=d0[k]; // الخانات الفارغة في التقرير المحفوظ تُملأ من خانات البرنامج الحالية
+  const ro=!canMgr();
   modalRoot.innerHTML=`<div class="modal-back" data-close="1"><div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="fuT">
     <h2 id="fuT"><span class="sec-ic" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)">${ic("report")}</span>تقرير المتابعة الدوري</h2>
     <form class="form" id="fuForm">
@@ -1459,7 +1460,7 @@ function openFollowup(pid){
   modalRoot.querySelectorAll('input[type="date"]').forEach(inp=>{ const hn=Object.assign(document.createElement("span"),{className:"hint"}); const u=()=>hn.textContent=inp.value?hl(inp.value):""; inp.after(hn); inp.addEventListener("input",u); u(); });
   $("#fu-period").value=fu.period; $("#fu-status").value=fu.status||"";
   $("#fu-prog").onchange=e=>openFollowup(e.target.value);
-  $("#fu-auto").onclick=()=>{ const d=fuDefaults(p); $("#fu-done").value=d.done; $("#fu-ch").value=d.challenges; $("#fu-impr").value=d.impr; };
+  $("#fu-auto").onclick=()=>{ const d=fuDefaults(progById(p.id)||p); $("#fu-done").value=d.done; $("#fu-ch").value=d.challenges; $("#fu-impr").value=d.impr; };
   const read=()=>({period:$("#fu-period").value,date:$("#fu-date").value||todayISO,status:$("#fu-status").value,done:$("#fu-done").value.trim(),challenges:$("#fu-ch").value.trim(),impr:$("#fu-impr").value.trim(),achieved:$("#fu-ach").value.trim(),
     corrective:$("#fu-cor").value.trim(),follower:$("#fu-fol").value.trim(),next:$("#fu-next").value});
   const save=async f=>{ if(!S.db||!canMgr()) return false; try{ await S.db.doc("programs/"+p.id).update({fu:f}); return true; }catch(e){ handleWriteErr(e); return false; } };
