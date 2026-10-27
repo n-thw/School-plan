@@ -1306,6 +1306,7 @@ function openReport(){
     try{ localStorage.setItem("kh_rep",JSON.stringify({scope:o.scope,prog:o.prog,only:o.only})); }catch(e){}
     cur=buildReport(o); $("#rp-prev").innerHTML=`<style>#rp-prev h1{font-family:var(--f-display);font-size:22px;margin:0;color:var(--navy)}#rp-prev h2{font-size:17px;margin:22px 0 4px;border-bottom:2px solid var(--accent);padding-bottom:3px}#rp-prev h2 small{font-weight:400;font-size:12.5px;color:var(--ink-2)}#rp-prev .sub,#rp-prev .meta{color:var(--ink-2);font-size:13px}#rp-prev table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}#rp-prev th,#rp-prev td{border:1px solid var(--line);padding:5px 7px;text-align:right;vertical-align:top}#rp-prev th{background:var(--navy);color:var(--surface)}#rp-prev .evr{font-size:12px;color:var(--accent);margin-top:4px}#rp-prev .impr-r{background:var(--gold-soft);border-inline-start:4px solid var(--gold);border-radius:6px;padding:8px 12px;margin:0 0 10px;font-size:13.5px}#rp-prev table.sum td{text-align:center;background:var(--surface)}#rp-prev table.sum b{display:block;font-size:20px;color:var(--accent)}#rp-prev section{overflow-x:auto}#rp-prev .nw{white-space:nowrap}#rp-prev ul{margin:3px 0 0;padding-inline-start:16px}</style>`+cur.body; };
   ["#rp-scope","#rp-prog","#rp-person","#rp-only"].forEach(s=>$(s).addEventListener("change",upd)); upd();
+  const fp=$("#fh-prog"); if(fp){ if(o.prog) fp.value=o.prog; fp.addEventListener("change",()=>{ $("#rp-prog").value=fp.value; upd(); }); $("#rp-prog").addEventListener("change",()=>{ if($("#rp-prog").value) fp.value=$("#rp-prog").value; }); } // اختيار البرنامج في النماذج ومرشّح التقرير متزامنان
   const fname = ext => `تقرير-الخطة-التشغيلية-${todayISO}.${ext}`;
   if(S.dl){ $("#rp-html").hidden=false; $("#rp-csv").hidden=false; }
   $("#rp-html").onclick=async()=>{
@@ -1391,9 +1392,9 @@ function formDoc(title,pages){
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"><style>${FORM_CSS}</style></head>
 <body><div class="bar-top">${esc(title)} <button type="button" onclick="window.print()">طباعة / حفظ PDF</button></div>${pages.join("")}</body></html>`;
 }
-async function saveForm(name,html){
+async function saveForm(name,html,msg){
   if(!S.dl){ toast("التنزيل غير متاح هنا"); return; }
-  try{ await S.dl.save({filename:`${name}-${todayISO}.html`,data:html}); toast("حُفظ النموذج، افتحيه واطبعيه أو احفظيه PDF"); }catch(e){ dlErr(e); }
+  try{ await S.dl.save({filename:`${name}-${todayISO}.html`,data:html}); toast(msg||"حُفظ النموذج، افتحيه واطبعيه أو احفظيه PDF"); }catch(e){ dlErr(e); }
 }
 const chk = (on,label,color) => `<span class="chk" style="color:${color||"#2B3A47"}"><i>${on?"✓":""}</i>${label}</span>`;
 const val = (v,ph) => v?esc(v):`<span class="dots">${ph||"…………………"}</span>`;
@@ -1512,7 +1513,7 @@ async function exportCards(p,list){
   if(!list.length){ toast("لا توجد شواهد لهذا البرنامج بعد"); return; }
   toast("جارٍ تجهيز بطاقات التوثيق…");
   const pages=[]; for(const x of list) pages.push(cardPage(p,x,await evPreview(x.e)));
-  await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/ \/ /g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages));
+  await saveForm(list.length===1?`بطاقة-توثيق-شاهد-${evCodeStr(evCode(p,list[0])).replace(/ \/ /g,"-")}`:`بطاقات-توثيق-الشواهد-${p.name}`,formDoc(`بطاقة توثيق شاهد · ${p.name}`,pages),`نُزّل ملف بطاقات «${p.name}» (${n(pages.length)} بطاقة)، افتحيه واطبعيه أو احفظيه PDF`);
 }
 function openEvDoc(taskId,evId,back){
   const t=S.tasks.find(x=>x.id===taskId); const p=progById(t?.programId); if(!t||!p) return;
