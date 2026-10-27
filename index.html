@@ -1481,16 +1481,26 @@ async function pdfPreview(blob){
     await pg.render({canvasContext:ctx,viewport:vp}).promise; return {img:cv.toDataURL("image/jpeg",0.86),pages:doc.numPages}; }
   finally{ try{ doc.destroy(); }catch(_){} }
 }
+const evFileKind=e=>{ const t=e.type||EV_TYPES[(e.name||"").split(".").pop().toLowerCase()]||""; return t==="application/pdf"?"pdf":/^image\//.test(t)?"image":""; };
 async function evPreview(e){
   if(e.link) return null;
-  try{ if(/^image\//.test(e.type||"")) return {img:`data:${e.type};base64,${await blobToB64(await evBlob(e))}`};
-    if(e.type==="application/pdf"||/\.pdf$/i.test(e.name||"")) return await pdfPreview(await evBlob(e)); }catch(_){}
-  return null;
+  const kind=evFileKind(e); if(!kind) return {err:"صيغة الملف غير معروفة"};
+  try{
+    if(kind==="image"){
+      let b=null, e1=null; try{ b=await evBlob(e); }catch(err){ e1=err; }
+      if(!b && S.as?.src){ try{ const u=await S.as.src(e.id); if(u){ const r=await fetch(u); if(r.ok) b=await r.blob(); } }catch(_){ } } // احتياط: من الذاكرة المؤقتة أو رابط الكائن
+      if(!b) return {err:e1?.code==="not_found"?"ملف الشاهد غير موجود في قاعدة البيانات (ربما تعطّل رفعه)":"تعذّر جلب ملف الصورة من قاعدة البيانات"};
+      const type=/^image\//.test(b.type)?b.type:(e.type||"image/jpeg");
+      return {img:`data:${type};base64,${await blobToB64(b)}`};
+    }
+    return await pdfPreview(await evBlob(e));
+  }catch(err){ console.warn("evPreview",e.id,err); return {err:err?.code==="not_found"?"ملف الشاهد غير موجود في قاعدة البيانات (ربما تعطّل رفعه)":"تعذّر تجهيز معاينة الملف"}; }
 }
 function cardPage(p,x,pv){
   const e=x.e, c=evCode(p,x);
-  const slot=pv?.img?`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;height:100%;min-height:0"><img src="${pv.img}" alt="" style="flex:1;min-height:0;max-width:100%;object-fit:contain;border-radius:6px;border:1px solid #DCE6EA;background:#fff">${pv.pages?`<small style="font-size:10.5px;color:#5E707C">الصفحة الأولى من ملف PDF${pv.pages>1?` · ${pv.pages} صفحات`:""}${e.name?` · <span style="direction:ltr;unicode-bidi:embed">${esc(e.name)}</span>`:""}</small>`:""}</div>`
-    :`<div style="text-align:center;color:#8A9AA5"><div style="font-size:34px">${e.link?"🔗":(e.type==="application/pdf"?"📄":"🖼️")}</div><b style="display:block;color:#5E707C;font-size:15px;margin:4px 0">${e.link?"شاهد على رابط":e.type==="application/pdf"?"ملف PDF مرفق":"موضع الشاهد"}</b><div style="font-size:11.5px;direction:ltr;word-break:break-all">${esc(e.link||e.name||"")}</div></div>`;
+  const cap=pv?.pages?`الصفحة الأولى من ملف PDF${pv.pages>1?` · ${pv.pages} صفحات`:""}${e.name?` · <span style="direction:ltr;unicode-bidi:embed">${esc(e.name)}</span>`:""}`:"";
+  const slot=pv?.img?`<div style="position:relative;width:100%;height:100%"><img src="${pv.img}" alt="" style="position:absolute;top:0;left:0;width:100%;height:${cap?"calc(100% - 18px)":"100%"};object-fit:contain;border-radius:6px">${cap?`<small style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10.5px;color:#5E707C">${cap}</small>`:""}</div>`
+    :`<div style="text-align:center;color:#8A9AA5"><div style="font-size:34px">${e.link?"🔗":(evFileKind(e)==="pdf"?"📄":"🖼️")}</div><b style="display:block;color:#5E707C;font-size:15px;margin:4px 0">${e.link?"شاهد على رابط":evFileKind(e)==="pdf"?"ملف PDF مرفق":"موضع الشاهد"}</b><div style="font-size:11.5px;direction:ltr;word-break:break-all">${esc(e.link||e.name||"")}</div>${pv?.err?`<div style="font-size:11px;color:#B03A48;margin-top:4px">${esc(pv.err)}</div>`:""}</div>`;
   const nb=(v,l)=>`<div style="text-align:center"><div style="border:1px solid #9CC4E4;border-radius:7px;background:#fff;height:30px;min-width:66px;display:grid;place-items:center;font-weight:800;color:#2781BE;font-size:15px">${esc(v)}</div><div style="font-size:10px;color:#5E707C;margin-top:3px">${l}</div></div>`;
   return formPage({sub:"تُرفق مع كل شاهد",title:"نموذج (٢): بطاقة توثيق شاهد",body:`
   <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;flex:1;min-height:0;margin-bottom:8px">
@@ -1851,6 +1861,7 @@ async function bootFirebase(){
     S.db=fbAdapter(fs); S.as=fbAssets(fs); updateWho(); render(); subscribeAll(S.db);
   });
 }
+window.__kh={evPreview};
 (async()=>{ const cl=window.claude; if(cl?.use) await bootClaude(cl); else await bootFirebase(); })();
 
 })();
